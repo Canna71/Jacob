@@ -48,10 +48,6 @@ var parser;
     parser.Production = Production;
 
 
-    function Grammar(prod) {
-        "use strict";
-
-    }
 
     /* Non Terminals */
 
@@ -170,14 +166,7 @@ var parser;
         "use strict";
         return this.production.getItems()[this.dot + 1];
     };
-/*
-    GItem.prototype.getNextTransition = function () {
-        "use strict";
-        //returns a transition from this item to the next on the next Symbol
-        var rule = new dfa.Rule(this, this.nextItem(), this.production.getItems()[this.dot + 1]);
-        return rule;
-    };
-*/
+
     GItem.prototype.equals = function (other) {
         "use strict";
         return other.production === this.production && other.dot === this.dot;
@@ -232,25 +221,11 @@ var parser;
                self.operators[oplist[0].toString()] = oplist.slice(1,3);
             });
         }
-//        this.actions = grammar.actions;
 
-/*        this.symbols = *//*junq(eof).*//*junq(this.terminals).append(this.nonTerminals).toArray();
-        this.symbolsTable = {};
-
-        var i = 0;
-        junq(this.symbols).forEach(function (s) {
-            self.symbolsTable[s.name] = i++;
-        });*/
         this.start = this.productions[0].head;
-        //process2 will compute FIRST and FOLLOW sets
-        this.process2();
-        //this is version LR0 (I guess, must check)
-        //this.computeLR0();
-        //this.filterKernel();
 
-        //This is version using DFA
-        //this.computeLR1();
-        //this.computeActionTableLR1();
+        this.computeFirstAndFollow();
+
         var mode = options.mode.toUpperCase();
         if(mode==='LALR1'){
             this.computeLALR1();
@@ -300,40 +275,8 @@ var parser;
         return this.symbols[this.symbolsTable[element]];
     };
 
-/*    PG.prototype.getElements = function () {
-        "use strict";
-        var en = junq(this.productions).flatmap(
-            function (prod) {
-                return junq(prod.head).append(prod.body);
-            }
-        );
-        return en;
-    };
-
-
-    PG.prototype.getNonTerminals = function () {
-        var self = this;
-        var nts = new sets.Set(
-            this.getElements().where(function (e) {
-                return  isNonTerminal(e);
-            })
-        );
-
-        return nts;
-    };
-
-    PG.prototype.getTerminals = function () {
-        var self = this;
-        var nts = new sets.Set(
-            this.getElements().where(function (e) {
-                return (isTerminal(e));
-            })
-        );
-
-        return nts;
-    };*/
     //Computes FIRST and FOLLOW sets
-    PG.prototype.process2 = function () {
+    PG.prototype.computeFirstAndFollow = function () {
         "use strict";
 
         var first = {};
@@ -438,195 +381,8 @@ var parser;
             ret.add(eps);
         }
         return ret;
-    }
-
-
-    PG.prototype.computeLR0 = function () {
-        "use strict";
-        this.S1 = new NT('S\'');
-        var states = [];
-        var self = this;
-        this.startproduction = new Production(this.S1, [this.start]);
-        this.startitem = this.startproduction.getItems()[0];
-        var rules = [];
-        states.push(this.startitem);
-        var i = 0;
-        while (i < states.length) {
-            var s = states[i];
-
-
-            if (!s.isAtEnd()) {
-                var b = s.symbolAhead();
-                var next = s.nextItem();
-                var rule = new dfa.Rule(s, b, next);
-
-                rules.push(rule);
-                if (states.indexOf(next) < 0) {
-                    states.push(next);
-                }
-
-
-                if (isNonTerminal(b)) {
-                    this.getProdutionsByHead(b).forEach(function (p) {
-                        //add a transition to the start of a production that reduces to non terminal b
-                        next = p.getItems()[0];
-                        var rule = new dfa.Rule(s, dfa.eps, next);
-                        rules.push(rule);
-                        if (states.indexOf(next) < 0) {
-                            states.push(next);
-                        }
-
-                    })
-                }
-            }
-
-            i = i + 1;
-        }
-
-        //The inputs of the NFA (and DFA) are the symbols of the grammar
-        var ab = junq(this.terminals).append(this.nonTerminals).toArray();
-
-        var specs = {
-            rulebook: new LRRuleBook(rules),
-            acceptstates: states,
-            startstate: this.startitem,
-            alphabet: ab
-        };
-
-        this.nfa = new dfa.NFA(specs);
-        var sp = this.nfa.toDFA();
-        sp.alphabet = ab;
-        this.dfa = new dfa.DFA(sp);
-        this.statesTable = sp.statesTable;
     };
 
-    PG.prototype.isKernel = function (item) {
-        "use strict";
-        return  (!item.isAtStart() || item === this.startitem);
-    };
-
-    PG.prototype.filterKernel = function () {
-        "use strict";
-        //TODO: remove non kernels from statesTable
-        var self = this;
-        this.kernelStatesTable = [];
-        for (var i = 0; i < this.statesTable.length; i++) {
-            var state = this.statesTable[i];
-            var kernels = junq(state).filter(function (item) {
-                item.isKernel = self.isKernel(item);
-                return item.isKernel;
-            });
-            this.kernelStatesTable[i] = new sets.Set(kernels);
-        }
-
-    };
-
-    PG.prototype.computeLookAheads = function () {
-        "use strict";
-        //todo: find an unique symbol
-        var sharp = new T('#');
-        this.first[sharp] = new sets.Set(sharp);
-        for (var i = 1; i < this.statesTable.length; i++) {
-            this.determineLookAheadsForSet(i, sharp);
-        }
-    };
-
-    //k is a set of kernel items of a LR0 set
-    //i is the corresponding state
-    //x is a grammar symbol
-    PG.prototype.determineLookAheadsForSet = function (i, sharp) {
-        "use strict";
-        var self = this;
-
-        var iset = self.statesTable[i];
-
-        var k = junq(iset).filter(function (item) {
-            return self.isKernel(item);
-        });
-
-        junq(k).forEach(function (item) {
-            if (item === self.startitem) {
-                iset.spont = iset.spont || [];
-                var index = iset.toArray().indexOf(item);
-                (iset.spont[index] = iset.spont[index] || []).push(eof);
-            }
-            var j = self.closureLR1([new LR1Item(item, sharp)]);
-            junq(j)
-                .filter(function (jtem) {
-                    return !jtem.item.isAtEnd();
-                })
-                .forEach(function (jtem) {
-
-                    console.log(jtem.toString());
-                    var x = jtem.item.symbolAhead();
-                    var a = jtem.lookahead;
-                    var gotoix = self.statesTable[self.dfa.nextState(i, x)];
-                    var nextitem = jtem.item.nextItem();
-                    var gix = junq(gotoix).first(function (gitem) {
-                        return gitem.equals(nextitem);
-                    });
-                    //ig is the index of the item in goto(i,x)
-                    var ig = gotoix.toArray().indexOf(gix);
-                    if (a !== sharp) {
-                        //a is generated spontaneously for item jtem in goto(i,x)
-
-
-                        var spont = (gotoix.spont = gotoix.spont || []);
-                        (spont[ig] = spont[ig] || []).push(a);
-
-
-                    } else {
-                        //lookahead propagates from item to jitem in goto(i,x)
-                        var propagates = (iset.propa = iset.propa || []);
-                        propagates.push([item, gotoix, ig]);
-                    }
-
-                });
-
-        });
-    };
-
-    PG.prototype.propagateLookAheads = function () {
-        "use strict";
-        var done = true;
-        var self = this;
-
-        for (var i = 1; i < this.statesTable.length; i++) {
-            var s = this.statesTable[i];
-            var items = s.toArray();
-            for (var k = 0; k < items.length; k++) {
-                var item = items[k];
-                if (self.isKernel(item)) {
-                    s.lookaheads = s.lookaheads || [];
-                    s.spont = s.spont || [];
-                    s.lookaheads[k] = s.lookaheads[k] || new sets.Set(s.spont[k] || []);
-                }
-            }
-        }
-
-
-        while (done) {
-
-
-            done = false;
-            for (i = 1; i < this.statesTable.length; i++) {
-                s = this.statesTable[i];
-                if (s.propa) {
-                    junq(s.propa).forEach(function (propagate) {
-                        item = propagate[0];
-                        k = s.toArray().indexOf(item);
-                        var gotoix = propagate[1];
-                        var ig = propagate[2];
-
-                        if (s.lookaheads && s.lookaheads[k]) {
-                            done = done || gotoix.lookaheads[ig].addSet(s.lookaheads[k]);
-                        }
-                    });
-                }
-            }
-        }
-
-    };
 
     PG.prototype.closure = function (items) {
         "use strict";
@@ -1011,333 +767,17 @@ var parser;
         }
     }
 
-    PG.prototype.computeLR1_old = function () {
-        "use strict";
-        this.S1 = new NT('S\'');
-        var states = [];
-        var self = this;
-        this.startproduction = new Production(this.S1, [this.start]);
-        this.startitem = new LR1Item(this.startproduction.getItems()[0], eof);
-
-        var rules = [];
-        states.push(this.startitem);
-        var i = 0;
-        while (i < states.length) {
-            var s = states[i].item;
-            var a = states[i].lookahead;
-
-            if (!s.isAtEnd()) {
-                var b = s.symbolAhead();
-                var ni = s.nextItem();
-                var next = junq(states).first(function (st) {
-                    return st.item === ni && st.lookahead === a;
-                });
-                if (next === undefined) {
-                    next = new LR1Item(s.nextItem(), a);
-                    states.push(next);
-                }
-
-                //create rule
-                var rule = new dfa.Rule(states[i], b, next);
-
-                rules.push(rule);
 
 
-                if (isNonTerminal(b)) {
-                    var suffix = s.tail();
-                    suffix.push(a);
-                    this.getProdutionsByHead(b).forEach(function (p) {
-                        //add a transition to the start of a production that reduces to non terminal b
-                        var pi = p.getItems()[0];
-                        var f = self.computeFirst(suffix);
-                        junq(f).filter(function (sy) {
-                            return isTerminal(sy);
-                        })
-                            .forEach(function (t) {
 
-                                next = junq(states).first(function (st) {
-                                    return st.item === pi && st.lookahead === t;
-                                });
-                                if (next === undefined) {
-                                    next = new LR1Item(pi, t);
-                                    states.push(next);
-                                }
-
-                                var rule = new dfa.Rule(states[i], dfa.eps, next);
-                                rules.push(rule);
-
-                            });
-
-
-                    })
-                }
-            }
-
-            i = i + 1;
-        }
-
-        //The inputs of the NFA (and DFA) are the symbols of the grammar
-        var ab = junq(this.terminals).append(this.nonTerminals).toArray();
-
-        var specs = {
-            rulebook: new LRRuleBook(rules),
-            acceptstates: states,
-            startstate: this.startitem,
-            alphabet: ab
-        };
-
-        this.nfa = new dfa.NFA(specs);
-        var sp = this.nfa.toDFA();
-        sp.alphabet = ab;
-        this.dfa = new dfa.DFA(sp);
-        //TODO: shouldn't we call this.dfa.minimize() ?
-        this.statesTable = sp.statesTable;
-        this.startState=1;
-    };
-
-    //computes nullable, FIRST and FOLLOW sets
-    PG.prototype.process = function () {
-        "use strict";
-        var first = {};
-        var nullable = {};
-        var follow = {};
-        var done = false;
-        var self = this;
-
-
-        junq(this.nonTerminals).forEach(function (nt) {
-            nullable[nt] = false;
-        });
-        junq(this.terminals).forEach(function (t) {
-            first[t] = new sets.Set(t);
-        });
-        do {
-            done = false;
-            junq(this.productions).forEach(function (p) {
-                var c1;
-                var lhs = p.head;
-                var rhs = p.body;
-                follow[lhs] = follow[lhs] || new sets.Set();
-                first[lhs] = first[lhs] || new sets.Set();
-                //Update nullable
-                var k = rhs.length;
-                if (!nullable[lhs]) {
-                    if (k === 0) {
-                        nullable[lhs] = true;
-                        done = true;
-                    } else if (junq(rhs).all(function (e) {
-                        return nullable[e];
-                    })) {
-                        //if all body elements are nullable
-                        nullable[lhs] = true;
-                        done = true;
-                    }
-                }
-                var allnullable = true;
-                for (var i = 0; i < k; i++) {
-                    follow[rhs[i]] = follow[rhs[i]] || new sets.Set();
-                    first[rhs[i]] = first[rhs[i]] || new sets.Set();
-                    if (i == 0 || allnullable) {
-                        c1 = first[lhs].cardinality();
-                        if (first[rhs[i]].contains(undefined)) {
-                            debugger;
-                        }
-                        first[lhs] = first[lhs].union(first[rhs[i]]);
-                        if (first[lhs].cardinality() > c1) done = true;
-                    }
-                    if (!self.isNullable(rhs[i])) {
-                        allnullable = false;
-                    }
-                    //from i+1 to k-1
-                    if (i === k - 1 || junq.range(k - (i + 1), i + 1).map(function (n) {
-                        return rhs[n];
-                    }).all(function (e) {
-                        return nullable[e];
-                    })) {
-                        //if the subsequent are all nullable
-                        c1 = follow[rhs[i]].cardinality();
-                        if (follow[lhs].contains(undefined)) {
-                            debugger;
-                        }
-                        follow[rhs[i]] = follow[rhs[i]].union(follow[lhs]);
-                        if (follow[rhs[i]].cardinality() > c1) done = true;
-                    }
-                    for (var j = i + 1; j < k; j++) {
-                        follow[rhs[j]] = follow[rhs[j]] || new sets.Set();
-                        first[rhs[j]] = first[rhs[j]] || new sets.Set();
-                        //from i+1 to j-1
-                        if (i + 1 === j || junq.range(j - 1 - (i + 1), i + 1).map(function (n) {
-                            return rhs[n];
-                        }).all(function (e) {
-                            return nullable[e];
-                        })) {
-                            c1 = follow[rhs[i]].cardinality();
-                            var r = rhs[j];
-                            if (first[rhs[j]].contains(undefined)) {
-                                debugger;
-                            }
-                            follow[rhs[i]] = follow[rhs[i]].union(first[rhs[j]]);
-                            if (follow[rhs[i]].cardinality() > c1) done = true;
-                        }
-                    }
-                }
-            });
-        } while (done);
-
-
-        this.first = first;
-        this.follow = follow;
-        this.nullable = nullable;
-    };
 
     PG.prototype.getSymbols = function () {
         return junq(this.getNonTerminals()).append(this.getTerminals()).toArray();
     }
 
-    PG.prototype.computeActionTable = function () {
-        /*
-         for each state i, if A --> .....ab in Ii e Ii->a->Ij e a is terminal shift j
-
-         */
-        var self = this;
-        var states = this.dfa.getStates();
-        self.action = [];
-        self.goto = [];
-        junq(states).forEach(function (i) {
-            "use strict";
-            junq(self.statesTable[i]).forEach(function (gitem) {
-
-                var act = (self.action[i] = self.action[i] || []);
-                //compute action
-                if (gitem.isAtEnd()) {
-                    //reduce for all a in follow(head) head !== start1
-                    var p = gitem.production;
-                    if (p.head !== self.S1) {
-                        var followA = self.follow[p.head];
-                        junq(followA).forEach(function (a) {
-
-                            //set the action(i,a) to reduce
-                            //(self.action[i] = self.action[i] || {})[a] = ['reduce',[self.productions.indexOf(gitem.production)]];
 
 
-                            var an = self.symbolsTable[a];
-                            if (act[an] === undefined) {
-                                act[ an] = ['reduce', [self.symbolsTable[gitem.production.head.name], gitem.production.body.length]];
-                            } else {
-                                throw new Error('Shift / reduce conflict in ' + gitem + ' on ' + a);
-                            }
-                        });
-                    } else {
 
-                        act[EOFNUM] = ['accept', []];
-                    }
-
-                } else {
-                    var a = gitem.symbolAhead();
-                    if (a !== undefined && isTerminal(a)) {
-                        var j = self.dfa.nextState(i, a);
-                        if (j !== undefined) {
-
-                            var n = self.symbolsTable[a.name];
-                            if (act[n] === undefined) {
-                                act[ n] = ['shift', [j]];
-                            } else {
-                                throw new Error('Shift / reduce conflict in ' + gitem + ' on ' + a);
-                            }
-
-                        }
-                    }
-                }
-
-
-            });
-            //compute goto
-            junq(self.nonTerminals).forEach(function (nt) {
-                var j = self.dfa.nextState(i, nt);
-                if (j !== undefined) {
-                    (self.goto[i] = self.goto[i] || [])[self.symbolsTable[nt.name]] = j;
-                }
-            });
-        });
-
-    };
-
-    PG.prototype.computeActionTableLR1 = function () {
-        /*
-         for each state i, if A --> .....ab in Ii e Ii->a->Ij e a is terminal shift j
-
-         */
-        var self = this;
-        var states = this.dfa.getStates();
-        var newAction;
-        self.action = [];
-        self.goto = [];
-        junq(states).forEach(function (i) {
-            "use strict";
-            junq(self.statesTable[i]).forEach(function (lr1item) {
-
-                var act = (self.action[i] = self.action[i] || []);
-                var gitem = lr1item.item;
-                var lookahead = lr1item.lookahead;
-
-                //compute action
-                if (gitem.isAtEnd()) {
-
-                    var p = gitem.production;
-                    var pindex = self.productions.indexOf(p);
-                    if (p.head !== self.S1) {
-
-                        var an = self.symbolsTable[lookahead];
-                        newAction = ['reduce', [self.symbolsTable[gitem.production.head.name], gitem.production.body.length, pindex]];
-                        if (act[an] === undefined) {
-                            act[an] = newAction;
-                        } else {
-                            //check if prod contains an operator and comparit to a
-                            act[an] = self.resolveConflict(act[an], newAction, a, gitem);
-                            //throw new Error('Shift / reduce conflict in ' + gitem + ' on ' + a);
-                        }
-
-                    } else {
-
-                        act[EOFNUM] = ['accept', []];
-                    }
-
-                } else {
-                    var a = gitem.symbolAhead();
-                    if (a !== undefined && isTerminal(a)) {
-                        var j = self.dfa.nextState(i, a);
-                        if (j !== undefined) {
-
-                            var n = self.symbolsTable[a.name];
-                            newAction = ['shift', [j]];
-                            if (act[n] === undefined) {
-                                act[ n] = newAction;
-                            } else {
-                                if (act[n][0] !== 'shift' || act[n][1][0] !== j) {
-                                    //check if prod contains an operator and compare it to a
-                                    act[n] = self.resolveConflict(act[n], newAction, a, gitem);
-                                    //throw new Error('Shift / reduce conflict in ' + gitem + ' on ' + a);
-                                }
-
-
-                            }
-
-                        }
-                    }
-                }
-
-
-            });
-            //compute goto
-            junq(self.nonTerminals).forEach(function (nt) {
-                var j = self.dfa.nextState(i, nt);
-                if (j !== undefined) {
-                    (self.goto[i] = self.goto[i] || [])[self.symbolsTable[nt.name]] = j;
-                }
-            });
-        });
-
-    };
 
 
     PG.prototype.resolveConflict = function (currentAction, newAction, a, gitem) {
