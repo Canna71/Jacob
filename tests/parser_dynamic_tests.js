@@ -84,6 +84,12 @@ var NonSLR1Grammar = {
 
 };
 
+/* NON LALR1
+ S -> aEa | bEb | aFb | bFa
+ E -> e
+ F -> e
+ */
+
 describe("parser.Parser",function() {
 
     describe("SLR mode", function() {
