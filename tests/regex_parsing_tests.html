@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>Regex Parsing Tests</title>
+
+    <link rel="stylesheet" href="../node_modules/mocha/mocha.css" type="text/css" />
+    <!--<script src="libs/jquery.js"></script>-->
+    <script src="../junq/junq.js"></script>
+    <script src="../junq/sets.js"></script>
+    <script src="../automata.js"></script>
+    <script src="../stringreader.js"></script>
+    <script src="../regexpparser.js"></script>
+    <!--<script src="utils.js"></script>-->
+    <script src="../node_modules/mocha/mocha.js"></script>
+    <script src="../node_modules/chai/chai.js"></script>
+
+</head>
+<body>
+<div id="mocha"><p><a href=".">Reload</a></p></div>
+<div id="messages"></div>
+<div id="fixtures"></div>
+<script>mocha.setup('bdd')</script>
+<script src="regex_parsing_tests.js"></script>
+<script>mocha.run();</script>
+</body>
+</html>
