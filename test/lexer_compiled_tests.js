@@ -42,83 +42,83 @@ describe("lex.Lexer",function() {
         it('should resolve definitions', function(){
             var lexer = compileLexer('321.02')
             var token = lexer.nextToken();
-            expect(token).to.equal('float');
-            expect(lexer.jjtext).to.equal('321.02');
+            expect(token.name).to.equal('float');
+            expect(token.value).to.equal(321.02);
         });
         it('should respect precedences', function(){
             var lexer = compileLexer('if iframe');
             var token = lexer.nextToken();
-            expect(token).to.equal('IF');
-            expect(lexer.jjtext).to.equal('if');
+            expect(token.name).to.equal('IF');
+            expect(token.value).to.equal('if');
             token = lexer.nextToken();
-            expect(token).to.equal('ident');
-            expect(lexer.jjtext).to.equal('iframe');
+            expect(token.name).to.equal('ident');
+            expect(token.value).to.equal('iframe');
         });
         it('should rollback', function(){
             var lexer = compileLexer('(123456');
             var token = lexer.nextToken();
-            expect(token).to.equal('LPAR');
+            expect(token.name).to.equal('LPAR');
             token = lexer.nextToken();
-            expect(token).to.equal('integer');
+            expect(token.name).to.equal('integer');
             expect(lexer.jjval).to.equal(123456);
             lexer.setInput(new StringReader('(23)'));
             token = lexer.nextToken();
-            expect(token).to.equal('EXPR');
+            expect(token.name).to.equal('EXPR');
 
         });
        it('should ignore tokens without returns', function(){
             var lexer = compileLexer('foo  \r\n  42');
             var token = lexer.nextToken();
             token = lexer.nextToken();
-            expect(token).to.equal('integer');
-            expect(lexer.jjtext).to.equal('42');
+            expect(token.name).to.equal('integer');
+            expect(token.value).to.equal(42);
         });
 
         it('should return "EOF" at end of file', function(){
             var lexer = compileLexer('foo');
             var token = lexer.nextToken();
             token = lexer.nextToken();
-            expect(token).to.equal('EOF');
-            //expect(lexer.jjtext).to.equal('42');
+            expect(lexer.isEOF(token)).to.be.true;
+            //expect(token.value).to.equal('42');
         });
 
         it('should implement negate ranges', function(){
             var lexer = compileLexer('<< 32');
             var token = lexer.nextToken();
-            expect(token).to.equal('notword_or_space');
-            expect(lexer.jjtext).to.equal('<<');
+            expect(token.name).to.equal('notword_or_space');
+            expect(token.value).to.equal('<<');
         });
 
         it('should use states', function(){
             var lexer = compileLexer('foo  /* start comment *****\r\n** ecc ecc ***\r\n ecc ecc */  42');
             var token = lexer.nextToken();
             token = lexer.nextToken();
-            expect(token).to.equal('integer');
-            expect(lexer.jjtext).to.equal('42');
+            expect(token.name).to.equal('integer');
+            expect(token.value).to.equal(42);
         });
 
         it('should use lookaheads', function(){
             var lexer = compileLexer('zxxxy aba ac');
             var token = lexer.nextToken();
-            expect(token).to.equal('zx*=zxx');
+            expect(token.name).to.equal('zx*=zxx');
             token = lexer.nextToken();
-            expect(token).to.equal('ident');
+            expect(token.name).to.equal('ident');
             token = lexer.nextToken();
-            expect(token).to.equal('(a|ab)=a');
+            expect(token.name).to.equal('(a|ab)=a');
             token = lexer.nextToken();
-            expect(token).to.equal('ident');
+            expect(token.name).to.equal('ident');
             token = lexer.nextToken();
-            expect(token).to.equal('ac=ac');
+            expect(token.name).to.equal('ac=ac');
             token = lexer.nextToken();
-            expect(token).to.equal('EOF');
+            expect(lexer.isEOF(token)).to.be.true;
         });
 
          it('should suport EOL', function(){
             var lexer = compileLexer('  foo  \r\n foo\r\n');
             var token = lexer.nextToken();
-            expect(token).to.equal('ident');
+            expect(token.name).to.equal('ident');
             token = lexer.nextToken();
-            expect(token).to.equal('at EOL foo');
+            expect(token.name).to.equal('at EOL foo');
             
         });
 
@@ -127,13 +127,13 @@ describe("lex.Lexer",function() {
         it('should suport BOL', function(){
             var lexer = compileLexer('foo foo \r\nfoo foo\r\n');
             var token = lexer.nextToken();
-            expect(token).to.equal('at BOL foo');
+            expect(token.name).to.equal('at BOL foo');
             token = lexer.nextToken();
-            expect(token).to.equal('ident');
+            expect(token.name).to.equal('ident');
             token = lexer.nextToken();
-            expect(token).to.equal('at BOL foo');
+            expect(token.name).to.equal('at BOL foo');
             token = lexer.nextToken();
-            expect(token).to.equal('at EOL foo');
+            expect(token.name).to.equal('at EOL foo');
 
 
         });

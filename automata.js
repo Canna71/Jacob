@@ -579,7 +579,7 @@ var automata;
                 this.tokenTable = specs.tokenTable;
                 this.secondaryTokenTable = specs.secondaryTokenTable;
             } else {
-                console.log('no specs, used as prototype?');
+                //no specs, used as prototype?
             }
 
         }

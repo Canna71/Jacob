@@ -765,7 +765,7 @@ var parser;
             //check if prod contains an operator and compare it to a
             act[an] = self.resolveConflict(act[an], newAction, lookahead, gitem);
         }
-    }
+    };
 
 
 
@@ -773,7 +773,7 @@ var parser;
 
     PG.prototype.getSymbols = function () {
         return junq(this.getNonTerminals()).append(this.getTerminals()).toArray();
-    }
+    };
 
 
 
@@ -901,14 +901,13 @@ var parser;
             str.push('Parser.prototype.'+mname+'=' + Parser.prototype[mname].toString()+';');
         });
 
+        /*
         str.push(this.constructor.LexerAdapter.toString());
 
         junq(['currentToken','next']).forEach(function(mname){
             str.push('LexerAdapter.prototype.'+mname+'=' + self.constructor.LexerAdapter.prototype[mname].toString()+';');
         });
-
-
-
+        */
 
         str.push('return Parser;');
         str.push('})();');
@@ -943,22 +942,20 @@ var parser;
             });
 
         return symbols;
-    }
+    };
 
     //This will be compiled
-    function Parser(specs) {
+    function Parser(grammar, options) {
         "use strict";
 
+        var specs = new PG(grammar, options);
         this.action = specs.action;
         this.goto = specs.goto;
         this.actions = specs.actions;
         this.startstate = specs.startState;
         //This is needed to translate from lexer names to parser numbers
         this.symbolsTable = specs.symbolsTable;
-        //do we need this?
-        //this.productions = specs.productions;
 
-        //TODO: this should become just string in the compiled-debug version
         this.symbols = specs.symbols;
     }
 
@@ -974,18 +971,19 @@ var parser;
     //* startstate
     Parser.prototype.parse = function (lexer) {
         this.stack = [];
-        this.lexer = new LexerAdapter(lexer);
+        this.lexer = lexer;
+        this.a = this.lexer.nextToken();
         this.stack.push({s: this.startstate, i: 0});
         this.accepted = false;
         this.inerror = false;
         while (!this.accepted && !this.inerror) {
             var top = this.stack[this.stack.length - 1];
             var s = top.s;
-            this.a = this.lexer.currentToken();
-            if(this.a != undefined)
-                this.an = this.symbolsTable[this.a.name];
-            else
+            //this.a = this.currentToken;
+            if(lexer.isEOF(this.a))
                 this.an = 0;
+            else
+                this.an = this.symbolsTable[this.a.name];
             var action = this.action[s][this.an];
             if (action !== undefined) {
                 this[action[0]].apply(this, action[1]);
@@ -994,16 +992,14 @@ var parser;
                 this.error(this.a,this);
             }
         }
-        console.log('accepted: ' + this.accepted + ' in error: ' + this.inerror);
-        console.log('$$: '+top.i.value);
         return top.i.value;
     };
 
     Parser.prototype.shift = function (state) {
         "use strict";
         this.stack.push({s: state, i: this.a});
-        this.lexer.next();
-        console.log('shift ' + state);
+        this.a = this.lexer.nextToken();
+
     };
 
     Parser.prototype.reduce = function (head, length, prodindex) {
@@ -1025,16 +1021,11 @@ var parser;
         //If we are debugging
 
         if(this.symbols) {
-            console.log('reduced ' + this.symbols[head].name + ' -> ' + rhs.map(function (s) {
-                return s.i.name;
-            }).toString());
-
             var nt = {name: this.symbols[head].name, value:value};
             this.stack.push({s: ns, i: nt});
         }
         else
         {
-            
             this.stack.push({s: ns,i:{value: value}});
         }
 
@@ -1042,13 +1033,14 @@ var parser;
 
     Parser.prototype.accept = function () {
         "use strict";
-        console.log('accept');
         this.accepted = true;
     };
 
     Parser.prototype.error = function(token){
         throw Error('Unexpected token "'+token.lexeme+'" at ('+token.pos.line+':'+token.pos.col+')');
     };
+
+
 
 
 
@@ -1073,44 +1065,21 @@ var parser;
             this.current = eof;
     };
     parser.TestLexer = TestLexer;
-    function LexerAdapter(lexer) {
-        "use strict";
-        this.lexer = lexer;
-        this.initialized = false;
-        this.current = undefined;
 
+
+    function generateParser(grammar, options){
+        var pg = new PG(grammar, options);
+        return pg.generateParser(options);
     }
 
-    LexerAdapter.prototype.currentToken = function () {
-        "use strict";
-        if (!this.initialized) {
-            this.next();
-            this.initialized = true;
-        }
-        return this.current;
-    };
-
-    LexerAdapter.prototype.next = function () {
-
-        "use strict";
-        //TODO: create a T with all info from current token taken from lexer.
-        var name = this.lexer.nextToken();
-        if (name === "EOF" || (typeof name === 'undefined')) {
-            this.current = undefined;
-        } else {
-            this.current = (/*this.current ||*/ {});
-            this.current.name = name;
-            this.current.value = this.lexer.jjval;
-            this.current.lexeme = this.lexer.jjtext;
-            this.current.position = this.lexer.jjpos;
-            this.current.pos = {col: this.lexer.jjcol, line: this.lexer.jjline};
-        }
-
-    };
+    function log(){
+        console.log(arguments);
+    }
 
     parser.Parser = Parser;
-    parser.ParserGenerator = PG;
-    PG.LexerAdapter = LexerAdapter;
+    parser.generateParser = generateParser;
+    //parser.ParserGenerator = PG;
+    //PG.LexerAdapter = LexerAdapter;
 
 })(parser || (parser = {}), automata);
 

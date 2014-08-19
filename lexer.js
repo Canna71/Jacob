@@ -7,6 +7,7 @@ var lexer;
 (function (lexer,dfa,regex, undefined) {
     "use strict";
 
+    var EOF = {};
 
     var mergeNFAs = function (nfas) {
         var start = new dfa.State();
@@ -69,7 +70,7 @@ var lexer;
 
     function expandLookAheads(rule, tokenid){
         if(rule.re.isLookAhead()){
-            console.log('Expanding lookahead '+tokenid);
+            
             var minmax=rule.re.second.getMinMaxLength();
             //nullable, we use just the head of the original RE
             if(minmax.min===0) {
@@ -116,8 +117,10 @@ var lexer;
 
     function resolveDefinitions(specs, str) {
         for (var def in specs.definitions) {
+            if(specs.definitions.hasOwnProperty(def)){
                 var re = new RegExp('\\{' + def + '\\}', "g");
                 str = str.replace(re, specs.definitions[def]);
+            }
         }
         return str;
     }
@@ -179,16 +182,16 @@ var lexer;
         str.push(new dfa.DFA().compileBase('CDFA_base'));
 
         for(var specialstate in res.states){
-            //if(specialstate === 'undefined') specialstate=undefined;
+            if(res.states.hasOwnProperty(specialstate)){
+                if(specialstate === 'undefined') specialstate=undefined;
 
-            if(specialstate === 'undefined') specialstate=undefined;
-
-            str.push(buildAutomata(res.rules,specialstate).compile(
-                {   className:'CDFA_'+specialstate,
-                    baseClass: 'CDFA_base'
-                }));
+                str.push(buildAutomata(res.rules,specialstate).compile(
+                    {   className:'CDFA_'+specialstate,
+                        baseClass: 'CDFA_base'
+                    }));
+            }
         }
-
+        str.push('var EOF={};');
         str.push('function Lexer(e){\nthis.pos={line:0,col:0};\nthis.input=e;');
         str.push('this.states={};');
         str.push('this.state = [undefined];');
@@ -197,17 +200,16 @@ var lexer;
         str.push('this.actions = ['+res.actions+']');
 
 
-
-
-
-
         for(specialstate in res.states){
-            //if(specialstate === 'undefined') specialstate=undefined;
-            str.push('this.states["'+specialstate+'"] = {};');
-            str.push('this.states["'+specialstate+'"].dfa = new '+ 'CDFA_'+specialstate+'();');
-            if( res.states[specialstate].eofaction){
-                str.push('this.states["'+specialstate+'"].eofaction = '+res.states[specialstate].eofaction+';');
+            if(res.states.hasOwnProperty(specialstate)){
+                //if(specialstate === 'undefined') specialstate=undefined;
+                str.push('this.states["'+specialstate+'"] = {};');
+                str.push('this.states["'+specialstate+'"].dfa = new '+ 'CDFA_'+specialstate+'();');
+                if( res.states[specialstate].eofaction){
+                    str.push('this.states["'+specialstate+'"].eofaction = '+res.states[specialstate].eofaction+';');
+                }
             }
+
         }
 
         str.push('}');
@@ -215,7 +217,7 @@ var lexer;
 
         str.push(
             junq(['setInput','nextToken','resetToken','halt','more','less','getDFA','getAction',
-                'pushState', 'popState','getState','restoreLookAhead','evictTail']).map(function(mname){
+                'pushState', 'popState','getState','restoreLookAhead','evictTail','isEOF']).map(function(mname){
                 return 'Lexer.prototype.'+mname+'=' + Lexer.prototype[mname].toString();
             }).toArray().join(';\n')
         );
@@ -229,20 +231,19 @@ var lexer;
     function Lexer(specs) {
         
         this.input = undefined;
-        //this.dfa = buildAutomata(specs,undefined);
         this.actions = [];
         this.states = {};
-        var self = this;
         this.state = [undefined];
-        var i=0;
-
+        this.lawhole=undefined;
         var res = processRules(specs);
         this.actions = res.actions;
         this.states = res.states;
 
         for(var specialstate in this.states){
-            if(specialstate === 'undefined') specialstate=undefined;
-            this.states[specialstate].dfa = buildAutomata(res.rules,specialstate);
+            if(this.states.hasOwnProperty(specialstate)){
+                if(specialstate === 'undefined') specialstate=undefined;
+                this.states[specialstate].dfa = buildAutomata(res.rules,specialstate);
+            }
         }
 
     }
@@ -259,14 +260,12 @@ var lexer;
     Lexer.prototype.pushState = function(state){
         this.state.push(state);
         this.getDFA().reset();
-        console.log("Lexer state set to "+this.getState());
     };
 
     Lexer.prototype.popState = function(){
         if(this.state.length>1) {
             this.state.pop();
             this.getDFA().reset();
-            console.log("Lexer state set to " + this.getState());
         }
     };
 
@@ -306,8 +305,20 @@ var lexer;
             ret = this.more();
         }
 
-        return ret;
+
+        if (ret === EOF) {
+            this.current = EOF;
+        } else {
+            this.current = {};
+            this.current.name = ret;
+            this.current.value = this.jjval;
+            this.current.lexeme = this.jjtext;
+            this.current.position = this.jjpos;
+            this.current.pos = {col: this.jjcol, line: this.jjline};
+        }
+        return this.current;
     };
+
 
     Lexer.prototype.more = function(){
         var ret;
@@ -352,12 +363,8 @@ var lexer;
             this.jjtext = this.buffer.substring(0, this.lastValidPos + 1);
             this.remains = this.buffer.substring(this.lastValidPos + 1);
             this.jjval = this.jjtext;
-            this.jjlength = this.jjtext.length;
             this.jjpos = this.lastValidPos + 1-this.jjtext.length;
-
             this.input.rollback(this.remains);
-            //return this.lastValid;
-            console.log('jjtext: '+this.jjtext+' token type: '+this.lastValid + ' jjpos: '+this.jjpos);
             var action = this.getAction(this.lastValid);
             if (typeof ( action) === 'function') {
                 return action.call(this);
@@ -373,20 +380,20 @@ var lexer;
                     action.call(this);
                 }
             }
-            return 'EOF';
+            return EOF;
         }
     };
 
 
     Lexer.prototype.less = function(length){
-  /*      var delta = this.jjtext.length-length;
-        this.remains = this.jjtext.substring(delta);
-        this.jjtext = this.jjtext.substring(0,delta);
-        this.jjlength = this.jjtext.length;
-        this.jjval = this.jjtext;*/
         this.input.rollback(length);
     };
 
+    Lexer.prototype.isEOF = function(o){
+        return o===EOF;
+    };
+
+    lexer.EOF = EOF;
     lexer.Lexer = Lexer;
 
 })( lexer || (lexer={}),automata,regex);

@@ -125,11 +125,9 @@ function compileLexer(str){
 }
 
 function compileParser(grammar, mode){
-    var pg = new parser.ParserGenerator(grammar, {mode: mode});
-    var parsersrc = pg.generateParser({parserName: 'MyParser'});
+    var parsersrc = parser.generateParser(grammar,{mode: mode, parserName: 'MyParser'});
     eval(parsersrc);
-    var p1 = new MyParser();
-    return p1;
+    return new MyParser();
 }
 
 describe("parser.Parser",function() {
@@ -179,9 +177,9 @@ describe("parser.Parser",function() {
         });
 
         it('fails on Non-LALR(1) grammar', function () {
-            var pg;
+            var p;
             expect(function() {
-                    new compileParser(NonLALR1Grammar, 'LALR1');
+                    p = compileParser(NonLALR1Grammar, 'LALR1');
                 }
             ).to.throw(/Reduce\/Reduce conflict/);
 
@@ -191,16 +189,14 @@ describe("parser.Parser",function() {
     describe("LR1 mode", function() {
         it('parses SLR grammar', function () {
             var lexer1 = new lexer.Lexer(tokenspecs).setInput(new StringReader('2+3*4+5'));
-            var pg = new parser.ParserGenerator(ExpGrammar, {mode: 'LR1'});
-            var p = new parser.Parser(pg);
+            var p = compileParser(ExpGrammar,  'LR1');
             var ret = p.parse(lexer1);
             expect(ret).to.be.equal('((2+(3*4))+5)');
         });
 
         it('parses Non-SLR(1) grammar', function () {
             var lexer1 = new lexer.Lexer(tokenspecs).setInput(new StringReader('*23=18'));
-            var pg = new parser.ParserGenerator(NonSLR1Grammar, {mode: 'LR1'});
-            var p = new parser.Parser(pg);
+            var p = compileParser(NonSLR1Grammar,  'LR1')
             var ret = p.parse(lexer1);
             expect(ret).to.be.equal('((*23)=18)');
 
@@ -208,8 +204,7 @@ describe("parser.Parser",function() {
 
         it('parses Non-LALR(1) grammar', function () {
             var lexer1 = new lexer.Lexer(tokenspecs).setInput(new StringReader('!*?'));
-            var pg = new parser.ParserGenerator(NonLALR1Grammar, {mode: 'LR1'});
-            var p = new parser.Parser(pg);
+            var p = compileParser(NonLALR1Grammar,  'LR1')
             var ret = p.parse(lexer1);
             expect(ret).to.be.equal('(!f*?)');
 
