@@ -117,6 +117,30 @@ var NonLALR1Grammar = {
 
 };
 
+var AmbiguousGrammar = {
+    tokens: ['integer','+','*','(',')'],
+    operators:[
+        ['+','left',100],
+        ['*','left',200]
+    ],
+    productions:[
+        ['E',['E','+','E'],function(e,_,t){
+            return '('+e+'+'+t+')';
+        }],
+        ['E',['E','*','E'],function(e,_,t){
+            return '('+e+'*'+t+')';
+        }],
+        ['E',['(','E',')'],function(_,e){
+            return '{'+e+'}';
+        }],
+        ['E',['integer'],function(i){
+            return i.toString();
+        }]
+
+    ]
+
+};
+
 function compileLexer(str){
     var lexersrc = lexer.generateLexer(tokenspecs,{lexerName: 'MyLexer'});
     eval(lexersrc);
@@ -158,6 +182,13 @@ describe("parser.Parser",function() {
             ).to.throw(/Reduce\/Reduce conflict/);
 
         });
+
+        it('parses Ambiguous grammar', function () {
+            var lexer1 = compileLexer('2+3*4+5');
+            var p = compileParser(AmbiguousGrammar, 'SLR');
+            var ret = p.parse(lexer1);
+            expect(ret).to.be.equal('((2+(3*4))+5)');
+        });
     });
 
     describe("LALR1 mode", function() {
@@ -184,6 +215,13 @@ describe("parser.Parser",function() {
             ).to.throw(/Reduce\/Reduce conflict/);
 
         });
+
+        it('parses Ambiguous grammar', function () {
+            var lexer1 = compileLexer('2+3*4+5');
+            var p = compileParser(AmbiguousGrammar, 'LALR1');
+            var ret = p.parse(lexer1);
+            expect(ret).to.be.equal('((2+(3*4))+5)');
+        });
     });
 
     describe("LR1 mode", function() {
@@ -208,6 +246,13 @@ describe("parser.Parser",function() {
             var ret = p.parse(lexer1);
             expect(ret).to.be.equal('(!f*?)');
 
+        });
+
+        it('parses Ambiguous grammar', function () {
+            var lexer1 = compileLexer('2+3*4+5');
+            var p = compileParser(AmbiguousGrammar, 'LR1');
+            var ret = p.parse(lexer1);
+            expect(ret).to.be.equal('((2+(3*4))+5)');
         });
     });
 

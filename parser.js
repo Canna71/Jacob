@@ -9,6 +9,7 @@ var sets = sets || require('junq/sets');
 var automata = automata || require('./automata');
 
 var parser;
+
 (function (parser, dfa,  undefined) {
 
 
@@ -243,18 +244,42 @@ var parser;
         var self = this;
         this.productions=[];
         this.actions=[];
-        junq(productions).forEach(function(production){
-            var head = production[0];
-            var body = production[1];
-            var action = production[2];
-            //determine if it's a terminal or nonterminal
-            var p = new Production(
-                self.addGrammarElement(head),
-                body.map(function(element){return self.addGrammarElement(element);})
-            );
-            self.productions.push(p);
-            self.actions.push(action);
-        });
+        var additionalProductions = [];
+        var head;
+        while(productions.length>0){
+            junq(productions).forEach(function(production){
+                head = production[0] || head;
+                var body = production[1];
+                var action = production[2];
+
+                body = junq(body).map(function(el){
+                    return self.parseProduction(head, el,additionalProductions);
+                }).toArray();
+
+                var p = new Production(
+                    self.addGrammarElement(head),
+                    body.map(function(element){return self.addGrammarElement(element);})
+                );
+                self.productions.push(p);
+                self.actions.push(action);
+            });
+            productions = additionalProductions;
+            additionalProductions = [];
+        }
+
+    };
+
+    var prodRE = /[\(\)\[\]\*\+\?\{\}]|(\\[\(\)\[\]\*\+\?\{\}]|[^\s()])*/g
+
+    PG.prototype.parseProduction = function (head, element, additional) {
+        if(element.isEBNF)
+        {
+            var id = this.productions.length;
+            var ret = element.toBNF(head, id, additional);
+            return ret;
+        }
+        else return element;
+
     };
 
     PG.prototype.addGrammarElement = function (element){
@@ -1041,31 +1066,66 @@ var parser;
     };
 
 
-
-
-
-    function TestLexer(list) {
-        "use strict";
-        this.list = list;
-        this.pos = 0;
-        this.current = this.list[this.pos];
+    function Optional(){
+        if(!(this instanceof Optional)) return new Optional(Array.prototype.slice.apply(arguments));
+        this.productionlist = arguments[0];
+        this.isEBNF = true;
     }
 
-    TestLexer.prototype.currentToken = function () {
-        "use strict";
-        return this.current;
+    Optional.prototype.toBNF = function(_,id, additional){
+        //arrange an unique name
+        var name = 'Optional_'+id+'_'+additional.length;
+
+        var prod1 = [name, [], function(){return [];}];
+        var prod2 = [name, this.productionlist,function(){
+            return [].slice.apply(arguments);
+            }];
+        additional.push(prod1);
+        additional.push(prod2);
+        return name;
     };
 
-    TestLexer.prototype.next = function () {
-        "use strict";
-        this.pos++;
-        if (this.pos < this.list.length)
-            this.current = this.list[this.pos];
-        else
-            this.current = eof;
-    };
-    parser.TestLexer = TestLexer;
+    function Repeat(){
+        if(!(this instanceof Repeat)) return new Repeat(Array.prototype.slice.apply(arguments));
+        this.productionlist = arguments[0];
+        this.isEBNF = true;
+    }
 
+    Repeat.prototype.toBNF = function(_,id, additional){
+        //arrange an unique name
+        var name = 'Repeat_'+id+'_'+additional.length;
+
+        var prod1 = [name, [], function(){return [];}];
+        var prod2 = [name, [name].concat(this.productionlist),
+            function(){
+                return arguments[0].concat(Array.prototype.slice.call(arguments,1));
+            }
+        ];
+        additional.push(prod1);
+        additional.push(prod2);
+        return name;
+    };
+
+    function Group(){
+        if(!(this instanceof Group)) return new Group(Array.prototype.slice.apply(arguments));
+        this.productionlist = arguments[0];
+        this.isEBNF = true;
+    }
+
+    Group.prototype.toBNF = function(_,id,additional){
+        var name = 'Group'+id+'_'+additional.length;
+        //we must determine if we have alternatives
+        var alternatives = [this.productionlist];
+        if(this.productionlist.length>1 && Array.isArray(this.productionlist[0])){
+            alternatives = this.productionlist;
+        }
+        junq(alternatives).forEach(function(e){
+            if(!Array.isArray(e)) e = [e];
+            var prod = [name, e, function(){return Array.prototype.slice.call(arguments);}];
+            additional.push(prod);
+        });
+        return name;
+    };
 
     function generateParser(grammar, options){
         var pg = new PG(grammar, options);
@@ -1078,6 +1138,9 @@ var parser;
 
     parser.Parser = Parser;
     parser.generateParser = generateParser;
+    parser.Optional = Optional;
+    parser.Repeat = Repeat;
+    parser.Group = Group;
     //parser.ParserGenerator = PG;
     //PG.LexerAdapter = LexerAdapter;
 
