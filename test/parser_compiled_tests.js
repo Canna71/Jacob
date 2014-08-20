@@ -19,7 +19,8 @@ var tokenspecs = {
         { 'regexp': '\\s*', action: function(){console.log('ignore spaces');}},
         { 'regexp': '.', action: function(){return this.jjtext;}},
         { 'regexp': '<<EOF>>', action: function(){console.log('end of file');return 'EOF';}}
-    ]
+    ],
+    lexerName: 'MyLexer'
 };
 
 /*
@@ -50,7 +51,8 @@ var ExpGrammar = {
             return i.toString();
         }]
 
-    ]
+    ],
+    parserName: 'MyParser'
 
 };
 
@@ -82,7 +84,8 @@ var NonSLR1Grammar = {
             return l;
         }]
 
-    ]
+    ],
+    parserName: 'MyParser'
 
 };
 
@@ -113,7 +116,8 @@ var NonLALR1Grammar = {
         ['F',['*'],function(_,F){
             return 'f*';
         }]
-    ]
+    ],
+    parserName: 'MyParser'
 
 };
 
@@ -137,19 +141,21 @@ var AmbiguousGrammar = {
             return i.toString();
         }]
 
-    ]
+    ],
+    parserName: 'MyParser'
 
 };
 
 function compileLexer(str){
-    var lexersrc = lexer.generateLexer(tokenspecs,{lexerName: 'MyLexer'});
+    var lexersrc = lexer.generateLexer(tokenspecs);
     eval(lexersrc);
     var lexer1 = new MyLexer(new StringReader(str));
     return lexer1;
 }
 
 function compileParser(grammar, mode){
-    var parsersrc = parser.generateParser(grammar,{mode: mode, parserName: 'MyParser'});
+    grammar.mode = mode;
+    var parsersrc = parser.generateParser(grammar);
     eval(parsersrc);
     return new MyParser();
 }
@@ -253,6 +259,14 @@ describe("parser.Parser",function() {
             var p = compileParser(AmbiguousGrammar, 'LR1');
             var ret = p.parse(lexer1);
             expect(ret).to.be.equal('((2+(3*4))+5)');
+        });
+        
+        it('select the correct mode for the grammar', function () {
+            var lexer1 = compileLexer('!*?');
+            var p = compileParser(NonLALR1Grammar,undefined);
+            var ret = p.parse(lexer1);
+            expect(ret).to.be.equal('(!f*?)');
+
         });
     });
 

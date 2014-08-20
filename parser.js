@@ -200,7 +200,7 @@ var parser;
         return e instanceof NT;
     }
 
-    function PG(grammar, options) {
+    function PG(grammar) {
         "use strict";
         var self = this;
         //this.grammar = grammar;
@@ -227,17 +227,32 @@ var parser;
 
         this.computeFirstAndFollow();
 
-        var mode = options.mode.toUpperCase();
+        var mode = (grammar.mode || '').toUpperCase();
         if(mode==='LALR1'){
             this.computeLALR1();
         } else if (mode==='SLR'){
             this.computeSLR();
-        } else {
+        } else if (mode === 'LR1'){
             this.computeLR1();
+        } else {
+            this.computeAuto();
         }
-
-
     }
+
+    PG.prototype.computeAuto = function () {
+        try{
+            this.computeSLR();
+        }catch(e)
+        {
+            try{
+                this.computeLALR1();
+            }
+            catch(e)
+            {
+                    this.computeLR1();
+            }
+        }
+    };
 
     PG.prototype.processProductions = function(productions){
         //here we split productions and actions, create internal productions and validate them
@@ -1128,8 +1143,8 @@ var parser;
     };
 
     function generateParser(grammar, options){
-        var pg = new PG(grammar, options);
-        return pg.generateParser(options);
+        var pg = new PG(grammar);
+        return pg.generateParser({parserName: grammar.parserName});
     }
 
     function log(){

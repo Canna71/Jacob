@@ -116,6 +116,30 @@ var NonLALR1Grammar = {
     ]
 
 };
+var AmbiguousGrammar = {
+    tokens: ['integer','+','*','(',')'],
+    operators:[
+        ['+','left',100],
+        ['*','left',200]
+    ],
+    productions:[
+        ['E',['E','+','E'],function(e,_,t){
+            return '('+e+'+'+t+')';
+        }],
+        ['E',['E','*','E'],function(e,_,t){
+            return '('+e+'*'+t+')';
+        }],
+        ['E',['(','E',')'],function(_,e){
+            return '{'+e+'}';
+        }],
+        ['E',['integer'],function(i){
+            return i.toString();
+        }]
+
+    ],
+    parserName: 'MyParser'
+
+};
 
 
 describe("parser.Parser",function() {
@@ -123,7 +147,8 @@ describe("parser.Parser",function() {
     describe("SLR mode", function() {
         it('parses SLR grammar', function () {
             var lexer1 = new lexer.Lexer(tokenspecs).setInput(new StringReader('2+3*4+5'));
-            var p = new parser.Parser(ExpGrammar, {mode: 'SLR'});
+            ExpGrammar.mode = 'SLR';
+            var p = new parser.Parser(ExpGrammar);
             var ret = p.parse(lexer1);
             expect(ret).to.be.equal('((2+(3*4))+5)');
         });
@@ -131,8 +156,9 @@ describe("parser.Parser",function() {
         it('fails on Non-SLR(1) grammar', function () {
             //var lexer1 = new lexer.Lexer(tokenspecs).setInput(new StringReader('2+3*4+5'));
             var p;
+            NonSLR1Grammar.mode = 'SLR';
             expect(function() {
-                    p = new parser.Parser(NonSLR1Grammar, {mode: 'SLR'})
+                    p = new parser.Parser(NonSLR1Grammar)
                 }
             ).to.throw(/Shift \/ Reduce conflict/);
 
@@ -140,8 +166,9 @@ describe("parser.Parser",function() {
 
         it('fails on Non-LALR(1) grammar', function () {
             var p;
+            NonLALR1Grammar.mode = 'SLR';
             expect(function() {
-                    p = new parser.Parser(NonLALR1Grammar, {mode: 'SLR'});
+                    p = new parser.Parser(NonLALR1Grammar);
                 }
             ).to.throw(/Reduce\/Reduce conflict/);
 
@@ -151,14 +178,16 @@ describe("parser.Parser",function() {
     describe("LALR1 mode", function() {
         it('parses SLR grammar', function () {
             var lexer1 = new lexer.Lexer(tokenspecs).setInput(new StringReader('2+3*4+5'));
-            var p = new parser.Parser(ExpGrammar, {mode: 'LALR1'});
+            ExpGrammar.mode = 'LALR1';
+            var p = new parser.Parser(ExpGrammar);
             var ret = p.parse(lexer1);
             expect(ret).to.be.equal('((2+(3*4))+5)');
         });
 
         it('parses Non-SLR(1) grammar', function () {
             var lexer1 = new lexer.Lexer(tokenspecs).setInput(new StringReader('*23=18'));
-            var p = new parser.Parser(NonSLR1Grammar, {mode: 'LALR1'});
+            NonSLR1Grammar.mode = 'LALR1';
+            var p = new parser.Parser(NonSLR1Grammar);
             var ret = p.parse(lexer1);
             expect(ret).to.be.equal('((*23)=18)');
 
@@ -166,8 +195,9 @@ describe("parser.Parser",function() {
 
         it('fails on Non-LALR(1) grammar', function () {
             var p;
+            NonLALR1Grammar.mode = 'LALR1';
             expect(function() {
-                   P = new parser.Parser(NonLALR1Grammar, {mode: 'LALR1'});
+                   P = new parser.Parser(NonLALR1Grammar);
                 }
             ).to.throw(/Reduce\/Reduce conflict/);
 
@@ -177,14 +207,16 @@ describe("parser.Parser",function() {
     describe("LR1 mode", function() {
         it('parses SLR grammar', function () {
             var lexer1 = new lexer.Lexer(tokenspecs).setInput(new StringReader('2+3*4+5'));
-            var p = new parser.Parser(ExpGrammar, {mode: 'LR1'});
+            ExpGrammar.mode = 'LR1';
+            var p = new parser.Parser(ExpGrammar);
             var ret = p.parse(lexer1);
             expect(ret).to.be.equal('((2+(3*4))+5)');
         });
 
         it('parses Non-SLR(1) grammar', function () {
             var lexer1 = new lexer.Lexer(tokenspecs).setInput(new StringReader('*23=18'));
-            var p = new parser.Parser(NonSLR1Grammar, {mode: 'LR1'});
+            NonSLR1Grammar.mode = 'LR1';
+            var p = new parser.Parser(NonSLR1Grammar);
             var ret = p.parse(lexer1);
             expect(ret).to.be.equal('((*23)=18)');
 
@@ -192,7 +224,25 @@ describe("parser.Parser",function() {
 
         it('parses Non-LALR(1) grammar', function () {
             var lexer1 = new lexer.Lexer(tokenspecs).setInput(new StringReader('!*?'));
-            var p = new parser.Parser(NonLALR1Grammar, {mode: 'LR1'});
+            NonLALR1Grammar.mode = 'LR1';
+            var p = new parser.Parser(NonLALR1Grammar);
+            var ret = p.parse(lexer1);
+            expect(ret).to.be.equal('(!f*?)');
+
+        });
+        
+        it('parses Ambiguous grammar', function () {
+            var lexer1 = new lexer.Lexer(tokenspecs).setInput(new StringReader('2+3*4+5'));
+            AmbiguousGrammar.mode = 'SLR';
+            var p = new parser.Parser(AmbiguousGrammar);
+            var ret = p.parse(lexer1);
+            expect(ret).to.be.equal('((2+(3*4))+5)');
+        });
+        
+        it('select the correct mode for the grammar', function () {
+            var lexer1 = new lexer.Lexer(tokenspecs).setInput(new StringReader('!*?'));
+            NonLALR1Grammar.mode = undefined;
+            var p = new parser.Parser(NonLALR1Grammar);
             var ret = p.parse(lexer1);
             expect(ret).to.be.equal('(!f*?)');
 

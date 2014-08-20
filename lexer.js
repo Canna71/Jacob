@@ -164,10 +164,10 @@ var lexer;
     //lex.buildAutomata = buildAutomata;
 
 
-    function generateLexer(specs,opts){
+    function generateLexer(specs){
         var lexerName ='Lexer';
-        if(opts && opts.lexerName){
-            lexerName = opts.lexerName;
+        if(specs && specs.lexerName){
+            lexerName = specs.lexerName;
         }
 
         var str = [];
