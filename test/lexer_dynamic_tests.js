@@ -1,6 +1,6 @@
 var chai = chai || require('chai');
-var lexer = lexer || require('../lexer');
-var StringReader = StringReader || require('../stringreader');
+var lexer = lexer || require('../lib/lexer');
+var StringReader = StringReader || require('../lib/stringreader');
 var expect = chai.expect;
 
 var basicTokens = {
@@ -118,8 +118,7 @@ describe("lex.Lexer",function() {
         });
 
         it('should suport BOL', function(){
-            var lexer1 = new lexer.Lexer(basicTokens).setInput(
-            new StringReader('foo foo \r\nfoo foo\r\n'));
+            var lexer1 = new lexer.Lexer(basicTokens).setInput('foo foo \r\nfoo foo\r\n');
             var token = lexer1.nextToken();
             expect(token.name).to.equal('at BOL foo');
             token = lexer1.nextToken();

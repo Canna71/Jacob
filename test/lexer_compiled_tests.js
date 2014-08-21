@@ -1,6 +1,6 @@
 var chai = chai || require('chai');
-var lexer = lexer || require('../lexer');
-var StringReader = StringReader || require('../stringreader');
+var lexer = lexer || require('../lib/lexer');
+var StringReader = StringReader || require('../lib/stringreader');
 var expect = chai.expect;
 
 var basicTokens = {
@@ -27,13 +27,14 @@ var basicTokens = {
         { 'regexp': '.', action: function(){return this.jjtext;}},//17
         {'regexp': '(\\n|\\r|.)', action: function(){}, state:'COMMENT'},//18
         { 'regexp': '$', action: function(){console.log('end of file');}}//19
-    ]
+    ],
+    moduleName: 'MyLexer'
 };
 
 function compileLexer(str){
     var lexersrc = lexer.generateLexer(basicTokens);
     eval(lexersrc);
-    var lexer1 = new Lexer(new StringReader(str));
+    var lexer1 = new MyLexer().setInput(str);
     return lexer1;
 }
 

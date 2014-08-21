@@ -1,5 +1,5 @@
 var chai = chai || require('chai');
-var regex = regex || require('../regex');
+var regex = regex || require('../lib/regex');
 var expect = chai.expect;
 
 

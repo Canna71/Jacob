@@ -2,9 +2,9 @@
  * Created by gcannata on 17/08/2014.
  */
 var chai = chai || require('chai');
-var lexer = lexer || require('../lexer');
-var parser = parser || require('../parser');
-var StringReader = StringReader || require('../stringreader');
+var lexer = lexer || require('../lib/lexer');
+var parser = parser || require('../lib/parser');
+var StringReader = StringReader || require('../lib/stringreader');
 var expect = chai.expect;
 
 var tokenspecs = {
@@ -20,7 +20,7 @@ var tokenspecs = {
         { 'regexp': '.', action: function(){return this.jjtext;}},
         { 'regexp': '<<EOF>>', action: function(){console.log('end of file');return 'EOF';}}
     ],
-    lexerName: 'MyLexer'
+    moduleName: 'MyLexer'
 };
 
 /*
@@ -52,7 +52,7 @@ var ExpGrammar = {
         }]
 
     ],
-    parserName: 'MyParser'
+    moduleName: 'MyParser'
 
 };
 
@@ -85,7 +85,7 @@ var NonSLR1Grammar = {
         }]
 
     ],
-    parserName: 'MyParser'
+    moduleName: 'MyParser'
 
 };
 
@@ -117,7 +117,7 @@ var NonLALR1Grammar = {
             return 'f*';
         }]
     ],
-    parserName: 'MyParser'
+    moduleName: 'MyParser'
 
 };
 
@@ -142,14 +142,14 @@ var AmbiguousGrammar = {
         }]
 
     ],
-    parserName: 'MyParser'
+    moduleName: 'MyParser'
 
 };
 
 function compileLexer(str){
     var lexersrc = lexer.generateLexer(tokenspecs);
     eval(lexersrc);
-    var lexer1 = new MyLexer(new StringReader(str));
+    var lexer1 = new MyLexer().setInput(str);
     return lexer1;
 }
 
