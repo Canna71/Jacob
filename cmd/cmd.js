@@ -13,8 +13,13 @@ var fs = require('fs');
 //Generate Lexer
 
 var tokensrc = fs.readFileSync(tokenfile).toString();
+var tokenspecs
+if(tokenfile.indexOf('.js', tokenfile.length - 3) !== -1){
+    tokenspecs= eval(tokensrc);
+} else {
+    tokenspecs=require('../lib/parser/JacobLex')(tokensrc);
+}
 
-var tokenspecs = eval(tokensrc);
 var lexersrc = require('../lib/lexer').generateLexer(tokenspecs);
 var lexerout = argv.l || tokenspecs.moduleName+'.js';
 fs.writeFileSync(lexerout,lexersrc);

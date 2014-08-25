@@ -34,6 +34,11 @@ describe("regex.RegExParser",function() {
             expect(lengths).to.have.property('max',1);
         });
 
+    it('parses negation', function(){
+        var re = regex.parseRegExp('[^\\}]*');
+        expect(re.matches('hello()')).to.be.true;
+    });
+
         it('parses simple range', function(){
             var res = regex.parseRegExp('[a-z]');
             expect(res).to.be.a('object');

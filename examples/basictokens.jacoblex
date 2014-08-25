@@ -1,0 +1,25 @@
+%moduleName = MyLexer
+%%
+digits  [0-9]
+%%
+{digits}*\.{digits}+    {
+    this.jjval = parseFloat(this.jjtext);
+    return 'float';
+}
+
+{digits}+   {
+    this.jjval = parseInt(this.jjtext);
+    return 'integer';
+}
+
+print {
+  return 'print';
+}
+
+\w+ { return 'id'; }
+
+\s* { }
+
+.   { return this.jjtext; }
+
+$   { console.log('EOF'); return 'EOF'; }
