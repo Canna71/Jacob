@@ -1,3 +1,4 @@
+//this is the only directive available at the moment
 %moduleName = MyLexer
 %%
 digits  [0-9]
@@ -6,7 +7,8 @@ digits  [0-9]
     this.jjval = parseFloat(this.jjtext);
     return 'float';
 }
-
+/* multiline comments
+are possible */
 {digits}+   {
     this.jjval = parseInt(this.jjtext);
     return 'integer';
