@@ -1,0 +1,19 @@
+
+%moduleName = JacobGramLexer
+%%
+
+
+%%
+\/\*    {this.pushState('BLOCKCOMMENT');}
+<BLOCKCOMMENT>\*\/    {this.popState();}
+<BLOCKCOMMENT>(\n|\r|.) {}
+
+\/\/ {this.pushState('LINECOMMENT');}
+<LINECOMMENT>[^\n]* {}
+<LINECOMMENT>\n {this.popState();}
+
+
+'[^'|\']+' { this.jjval = this.jjtext.substring(1,this.jjtext.length-1); return 'Terminal'; }
+\w+ { return 'id'; }
+\s {}
+.   { return this.jjtext; }

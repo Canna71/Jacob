@@ -13,7 +13,7 @@ var fs = require('fs');
 //Generate Lexer
 
 var tokensrc = fs.readFileSync(tokenfile).toString();
-var tokenspecs
+var tokenspecs;
 if(tokenfile.indexOf('.js', tokenfile.length - 3) !== -1){
     tokenspecs= eval(tokensrc);
 } else {
@@ -27,8 +27,13 @@ fs.writeFileSync(lexerout,lexersrc);
 //Generate Parser
 
 var grammarsrc = fs.readFileSync(grammarfile).toString();
+var grammar;
+if(grammarfile.indexOf('.js', grammarfile.length - 3) !== -1) {
+    grammar = eval(grammarsrc);
+} else {
+    grammar = require('../lib/parser/JacobGram')(grammarsrc);
+}
 
-var grammar = eval(grammarsrc);
 var parsersrc = require('../lib/parser').generateParser(grammar);
 var parserout = argv.p || grammar.moduleName+'.js';
 fs.writeFileSync(parserout,parsersrc);
