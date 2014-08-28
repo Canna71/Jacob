@@ -31,7 +31,10 @@ var grammar;
 if(grammarfile.indexOf('.js', grammarfile.length - 3) !== -1) {
     grammar = eval(grammarsrc);
 } else {
-    grammar = require('../lib/parser/JacobGram')(grammarsrc);
+
+        grammar = require('../lib/parser/JacobGram')(grammarsrc);
+
+
 }
 
 var parsersrc = require('../lib/parser').generateParser(grammar);

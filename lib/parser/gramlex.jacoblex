@@ -1,19 +1,23 @@
 
-%moduleName = JacobGramLexer
+%moduleName JacobGramLexer
 %%
 
 
 %%
-\/\*    {this.pushState('BLOCKCOMMENT');}
+<>\/\*    {this.pushState('BLOCKCOMMENT');}
 <BLOCKCOMMENT>\*\/    {this.popState();}
-<BLOCKCOMMENT>(\n|\r|.) {}
+<BLOCKCOMMENT>(\n|\r|.) {//d}
 
-\/\/ {this.pushState('LINECOMMENT');}
-<LINECOMMENT>[^\n]* {}
+<>\/\/ {this.pushState('LINECOMMENT');}
+<LINECOMMENT>[^\n]* {//e}
 <LINECOMMENT>\n {this.popState();}
 
 
-'[^'|\']+' { this.jjval = this.jjtext.substring(1,this.jjtext.length-1); return 'Terminal'; }
-\w+ { return 'id'; }
-\s {}
-.   { return this.jjtext; }
+<>'[^'|\']+' { this.jjval = this.jjtext.substring(1,this.jjtext.length-1); return 'Terminal'; }
+<>function {this.func=this.jjtext;this.blocklevel=0; this.pushState('FUNCTION');}
+<FUNCTION>[^\{\}]* {this.func+=this.jjtext;}
+<FUNCTION>[{]   {this.func+=this.jjtext; this.blocklevel++}
+<FUNCTION>[}]   {this.func+=this.jjtext; this.blocklevel--; if(this.blocklevel===0) {this.popState(); this.jjtext = this.jjval = this.func; return 'function'; }}
+<>\w+ { return 'id'; }
+<>\s { //mah }
+<>.   { return this.jjtext; }

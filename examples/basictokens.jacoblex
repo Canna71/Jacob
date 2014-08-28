@@ -1,26 +1,26 @@
 
-%moduleName = MyLexer
+%moduleName MyLexer
 %%
-digits  [0-9]
+digits = [0-9]
 %%
-{digits}*\.{digits}+    {
+<>{digits}*\.{digits}+    {
     this.jjval = parseFloat(this.jjtext);
     return 'float';
 }
 
-{digits}+   {
+<>{digits}+   {
     this.jjval = parseInt(this.jjtext);
     return 'integer';
 }
 
-print {
+<>print {
   return 'print';
 }
 
-\w+ { return 'id'; }
+<>\w+ { return 'id'; }
 
-\s* { }
+<>\s* { }
 
-.   { return this.jjtext; }
+<>.   { return this.jjtext; }
 
-$   { console.log('EOF'); return 'EOF'; }
+<>$   { console.log('EOF'); return 'EOF'; }

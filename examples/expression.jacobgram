@@ -1,4 +1,4 @@
 
-Program = { Statement, ',', AltroStatement } ;
+Program = { Statement } function(){};
 
-Statement = 'integer' ;
+Statement = 'id', '=', Expression function(par1, par2){console.log('test');} ;
