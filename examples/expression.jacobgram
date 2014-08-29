@@ -1,3 +1,5 @@
+%left '+' '-'
+%left '*' '/'
 
 Program = { Statement } function(){};
 
