@@ -2,4 +2,4 @@
 Program = { Statement } function(){};
 
 Statement = 'id', '=', Expression function(par1, par2){console.log('test');}
-            | 'print' Expression function(){} ;
+            | 'print', Expression function(){} ;
