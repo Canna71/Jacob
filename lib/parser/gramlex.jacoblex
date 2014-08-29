@@ -6,10 +6,10 @@
 %%
 <>\/\*    {this.pushState('BLOCKCOMMENT');}
 <BLOCKCOMMENT>\*\/    {this.popState();}
-<BLOCKCOMMENT>(\n|\r|.) {//d}
+<BLOCKCOMMENT>(\n|\r|.) {}
 
 <>\/\/ {this.pushState('LINECOMMENT');}
-<LINECOMMENT>[^\n]* {//e}
+<LINECOMMENT>[^\n]* {}
 <LINECOMMENT>\n {this.popState();}
 
 
