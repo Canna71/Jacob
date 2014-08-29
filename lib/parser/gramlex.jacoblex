@@ -12,7 +12,7 @@
 <LINECOMMENT>[^\n]* {}
 <LINECOMMENT>\n {this.popState();}
 
-
+<>%left|%right|%nonassoc { this.jjval = this.jjtext.substring(1); return 'Op';}
 <>'[^'|\']+' { this.jjval = this.jjtext.substring(1,this.jjtext.length-1); return 'Terminal'; }
 <>function {this.func=this.jjtext;this.blocklevel=0; this.pushState('FUNCTION');}
 <FUNCTION>[^\{\}]* {this.func+=this.jjtext;}

@@ -10,6 +10,8 @@ var tokenfile = argv.t;
 var grammarfile = argv.g;
 var fs = require('fs');
 var path = require('path');
+
+
 if(typeof tokenfile !== 'undefined') {
 //Generate Lexer
 
