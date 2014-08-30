@@ -1,0 +1,1 @@
+G = 'id' ('integer' '+' | '-' 'float') 'id' ;

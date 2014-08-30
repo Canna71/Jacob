@@ -37,7 +37,7 @@ if(typeof grammarfile !== 'undefined') {
     } else {
         grammar = require('../lib/parser/JacobGram')(grammarsrc);
     }
-
+    fs.writeFileSync('./debug.json', JSON.stringify(grammar));
     var parsersrc = require('../lib/parser').generateParser(grammar);
     var parserout = argv.p || path.join(path.dirname(grammarfile), grammar.moduleName + '.js');
     fs.writeFileSync(parserout, parsersrc);
