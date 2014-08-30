@@ -60,6 +60,13 @@ var parser = parser || require('../lib/parser');
             ],
             [
                 ,
+                ['-', 'Expression'],
+                function ( _, e) {
+                    return -e;
+                }
+            ],
+            [
+                ,
                 ['integer'],
                 function (i) {
                     return i;
@@ -82,7 +89,7 @@ var parser = parser || require('../lib/parser');
 
 
         ],
-        moduleName: 'expint'
+        moduleName: 'expint1'
 
     };
     return ExpGrammar;
