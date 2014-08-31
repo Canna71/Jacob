@@ -1,1 +1,1 @@
-G = 'id' ('integer' '+' | '-' 'float') 'id' ;
+G = 'id'  ('integer' '+' | '-' 'float') ['?' 'integer'] 'id' ;
