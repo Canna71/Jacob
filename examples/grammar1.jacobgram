@@ -1,1 +1,3 @@
+%moduleName grammar1int
+
 G = 'id'  ('integer' '+' | '-' 'float') ['?' 'integer'] 'id' ;

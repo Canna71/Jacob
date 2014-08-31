@@ -1,7 +1,9 @@
 /**
  * Created by gcannata on 20/08/2014.
  */
+
 var argv = require('minimist')(process.argv.slice(2));
+var jacob = require('../index');
 
 if(!argv.t && !argv.g){
     printUsage();
@@ -12,37 +14,45 @@ var fs = require('fs');
 var path = require('path');
 
 
-if(typeof tokenfile !== 'undefined') {
-//Generate Lexer
-
+function elaborateLexFile(tokenfile, outfile) {
     var tokensrc = fs.readFileSync(tokenfile).toString();
     var tokenspecs;
     if (tokenfile.indexOf('.js', tokenfile.length - 3) !== -1) {
         tokenspecs = eval(tokensrc);
     } else {
-        tokenspecs = require('../lib/parser/JacobLex')(tokensrc);
+        tokenspecs = tokensrc;
     }
 
-    var lexersrc = require('../lib/lexer').generateLexer(tokenspecs);
-    var lexerout = argv.l || path.join(path.dirname(tokenfile), tokenspecs.moduleName + '.js');
+    var lexersrc = jacob.generateLexerSource(tokenspecs);
+    var lexerout = outfile || path.join(path.dirname(tokenfile), (tokenspecs.moduleName || path.basename(tokenfile)+'.out') + '.js');
+
     fs.writeFileSync(lexerout, lexersrc);
 }
 
-if(typeof grammarfile !== 'undefined') {
-    //Generate Parser
+if(typeof tokenfile !== 'undefined') {
+//Generate Lexer
+    elaborateLexFile(tokenfile, argv.l);
+}
+
+function elaborateGramFile(grammarfile, outfile) {
     var grammarsrc = fs.readFileSync(grammarfile).toString();
     var grammar;
     if (grammarfile.indexOf('.js', grammarfile.length - 3) !== -1) {
         grammar = eval(grammarsrc);
     } else {
-        grammar = require('../lib/parser/JacobGram')(grammarsrc);
+        grammar = grammarsrc;
     }
-    fs.writeFileSync('./debug.json', JSON.stringify(grammar));
-    var parsersrc = require('../lib/parser').generateParser(grammar);
-    var parserout = argv.p || path.join(path.dirname(grammarfile), grammar.moduleName + '.js');
+
+    var parsersrc = jacob.generateParserSource(grammar);
+    var parserout = outfile || path.join(path.dirname(grammarfile), ( grammar.moduleName || path.basename(grammarfile)+'.out') + '.js');
+    console.log(parserout);
     fs.writeFileSync(parserout, parsersrc);
+}
+if(typeof grammarfile !== 'undefined') {
+    //Generate Parser
+    elaborateGramFile(grammarfile, argv.p);
 }
 
 function printUsage(){
-    console.log('Usage: jacob -t <tokens file> -g <grammar file> -l lexerfile -p parserfile')
+    console.log('Usage: jacob -t <tokens file> -g <grammar file> [-l lexerfile] [-p parserfile]')
 }
