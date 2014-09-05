@@ -24,7 +24,7 @@ if(typeof tokenfile !== 'undefined') {
 
 if(typeof grammarfile !== 'undefined') {
     //Generate Parser
-    elaborateGramFile(grammarfile, argv.p);
+    jacob.elaborateGramFile(grammarfile, argv.p);
 }
 
 function printUsage(){

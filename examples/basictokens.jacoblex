@@ -13,7 +13,7 @@ digits = [0-9]
     return 'integer';
 }
 
-<>print {
+<DEFAULT>print {
   return 'print';
 }
 
