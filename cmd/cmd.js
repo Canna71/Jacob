@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /**
  * Created by gcannata on 20/08/2014.
  */

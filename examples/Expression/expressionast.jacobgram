@@ -1,0 +1,32 @@
+%left 'PLUS' '-'
+%left '*' '/'
+
+Program = { Statement } function(stmts){ return new imports.Program(stmts);};
+
+Statement = 'id' '=' Expression function(id,_, exp){return new imports.Assignment(id,exp);}
+            | 'print' Expression function(_,exp){ return new imports.Print(exp);} ;
+
+Expression = Expression 'PLUS' Expression  function (e1, _, e2) {
+                                                             return new imports.AddExp(e1,e2);
+                                                         }
+            | Expression '-' Expression function (e1, _, e2) {
+                                                              return new imports.SubtractExp(e1,e2);
+                                                          }
+            | Expression '*' Expression function (e1, _, e2) {
+                                                             return new imports.MultiplyExp(e1,e2);
+                                                         }
+             | Expression '/' Expression function (e1, _, e2) {
+                                                               return new imports.DivideExp(e1,e2);
+                                                           }
+             | 'integer'  function (i) {
+                                             return new imports.Integer(i);
+                                         }
+             | 'id'  function (id) {
+                                        return new imports.Identifier(id);
+                                    }
+             | '(' Expression ')'   function (_, e) {
+                                                         return e;
+                                                     }
+
+
+;

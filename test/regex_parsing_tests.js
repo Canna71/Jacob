@@ -65,7 +65,7 @@ describe("regex.RegExParser",function() {
             expect(lengths).to.have.property('max',1);
         });
 
-        it('parses range with classes', function(){
+        it('parses range with astclasses', function(){
             var res = regex.parseRegExp('[\\w\\s]');
             expect(res).to.be.a('object');
             expect(res.second).to.be.instanceof(regex.CharactersRange);
@@ -105,7 +105,7 @@ describe("regex.RegExParser",function() {
             expect(res.matches('o')).to.be.false;
         });
 
-        it('parses negated range with classes', function(){
+        it('parses negated range with astclasses', function(){
             var res = regex.parseRegExp('[^\\w\\s]');
             res = regex.parseRegExp('[^\\w\\s]');
             expect(res).to.be.a('object');
