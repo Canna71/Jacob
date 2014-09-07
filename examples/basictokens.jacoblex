@@ -21,6 +21,7 @@ digits = [0-9]
 
 <>\s* { }
 
+<>\+    { return 'PLUS'; }
 <>.   { return this.jjtext; }
 
 <>$   { console.log('EOF'); return 'EOF'; }
