@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Jacob : A lexer and parser generator in JavaScript for DSL and custom languages in the browser and Node.js">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Jacob</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/Canna71/Jacob">View on GitHub</a>
+
+          <h1 id="project_title">Jacob</h1>
+          <h2 id="project_tagline">A lexer and parser generator in JavaScript for DSL and custom languages in the browser and Node.js</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/Canna71/Jacob/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/Canna71/Jacob/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a name="jacob" class="anchor" href="#jacob"><span class="octicon octicon-link"></span></a>JACOB</h1>
+
+<p>Possibly Acronym for: JAvascript COmpiler Bison-like
+ Or maybe even Just Another Compiler to OBjects</p>
+
+<p>Jacob is a tool like Flex and Bison to generate interpreters or compilers. This can be used for example to create a DSL (domain specific language) to be used in NodeJS or in the browser.</p>
+
+<p>Generating a language interpreter (or compiler) involves two steps: </p>
+
+<ol>
+<li>aggregate the input characters into a series of "tokens": this is done by a module called "lexer"</li>
+<li>interpreting the series of tokens as a language, according to a grammar, this is done by a module called "parser".</li>
+</ol><p>Also, you will define an actual behaviour which is the semantic of the language, that is, what the program should do according to a language statement.</p>
+
+<p>Given appropiate instructions, Jacob will generate both the lexer and the parser. We'll see how to specify the actual behaviour of your parser.</p>
+
+<h1>
+<a name="lexer" class="anchor" href="#lexer"><span class="octicon octicon-link"></span></a>Lexer</h1>
+
+<p>In order for Jacob to create a lexer you have to provide it with a .jacoblex file which looks something like the following:</p>
+
+<pre lang="[JavaSCript]"><code>
+%moduleName MyLexer
+%%
+digits = [0-9]
+%%
+&lt;&gt;{digits}*\.{digits}+    {
+    this.jjval = parseFloat(this.jjtext);
+    return 'float';
+}
+
+&lt;&gt;{digits}+   {
+    this.jjval = parseInt(this.jjtext);
+    return 'integer';
+}
+
+&lt;&gt;print {
+  return 'print';
+}
+
+&lt;&gt;\w+ { return 'id'; }
+
+&lt;&gt;\s* { }
+
+&lt;&gt;.   { return this.jjtext; }
+
+&lt;&gt;$   { console.log('EOF'); return 'EOF'; }
+</code></pre>
+
+<p>The syntax is similar to Flex's, with some differences.
+The file is split in three areas, separated by a double percent. In the first area are the directives. The only currently supported is %moduleName, which allow you to specify the name of the generated module.</p>
+
+<p>The second section contains definitions, that allows you to assign names to regular expressions.</p>
+
+<p>The third section contains the actual ules. In order to recognize a token, you specify the regular expression that matches it, and then assign it an action.</p>
+
+<p>Take for example the following:</p>
+
+<pre lang="[JavaSCript]"><code>&lt;&gt;\w+ { return 'id'; }
+</code></pre>
+
+<p>The double angled brakets are used to specify (optional) starting state of the rule (more on that later), in this case the rule is active in the DEFAULT state. 
+The regular expression <code>\w+</code> matches one or more alphanumeric chars. 
+The associated action (between curly braces) is a javascript function that should return the name of the matched token.
+This name is the name that can then be used in the grammar file.</p>
+
+<h1>
+<a name="regular-expressions-syntax" class="anchor" href="#regular-expressions-syntax"><span class="octicon octicon-link"></span></a>Regular Expressions Syntax</h1>
+
+<p>Jacob implements most, if not all, the regular expressions mechanism found in most lexer, including forward lookahead.
+Here is a summary:</p>
+
+<table>
+<thead><tr>
+<th>pattern</th>
+<th>description</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>x</td>
+<td>matches character 'x'</td>
+</tr>
+<tr>
+<td>.</td>
+<td>matches any character except newline</td>
+</tr>
+<tr>
+<td>[xyz]</td>
+<td>this is a character class: it matches either 'x','y' or 'z'</td>
+</tr>
+<tr>
+<td>[a-f]</td>
+<td>character class with range: it matches every character from 'a' to 'f' included</td>
+</tr>
+<tr>
+<td>[^a-f]</td>
+<td>range negation: matches everything BUT 'a'-'f'</td>
+</tr>
+<tr>
+<td>r*</td>
+<td>matches 0 or more times the regular expression r</td>
+</tr>
+<tr>
+<td>r+</td>
+<td>matches 1 or more times r</td>
+</tr>
+<tr>
+<td>r?</td>
+<td>matches 0 or 1 r</td>
+</tr>
+<tr>
+<td>r{2,5}</td>
+<td>matches from 2 to 5 r</td>
+</tr>
+<tr>
+<td>r{2,}</td>
+<td>matches 2 or more r</td>
+</tr>
+<tr>
+<td>r{,5}</td>
+<td>matches from 0 to 5 r</td>
+</tr>
+<tr>
+<td>r{4}</td>
+<td>matches r exactly 4 times</td>
+</tr>
+<tr>
+<td>{digits}</td>
+<td>matches the definition named 'digits'</td>
+</tr>
+<tr>
+<td>\X</td>
+<td>'\' is the escape character, can be used to insert character like '\n','\r','\t' or to escape regex special character like *</td>
+</tr>
+<tr>
+<td>\x2a</td>
+<td>matches character with hex code 2a</td>
+</tr>
+<tr>
+<td>\u2103</td>
+<td>matches unicode character U+2103</td>
+</tr>
+<tr>
+<td>rs</td>
+<td>the regular expression r followed by the regular expresson s</td>
+</tr>
+<tr>
+<td>r|s</td>
+<td>either r or s</td>
+</tr>
+<tr>
+<td>r/s</td>
+<td>lookahead: matches r only if it is followed by s</td>
+</tr>
+<tr>
+<td>^r</td>
+<td>matches r only at the beginning of a line</td>
+</tr>
+<tr>
+<td>r$</td>
+<td>matches r only at the end of a line</td>
+</tr>
+<tr>
+<td>ab(cd)*</td>
+<td>matches ab, abdc, abcdcd, abcdcdcd ecc.</td>
+</tr>
+</tbody>
+</table><p>To generate the lexer use the following command line:</p>
+
+<p><code>jacob -t tokens.jacoblex [-l lexer-js]</code></p>
+
+<p>The <code>-t</code> argument specify the token specifications file, the optional <code>-l</code> parameter specify the name of the generated file.</p>
+
+<h1>
+<a name="lexer-actions" class="anchor" href="#lexer-actions"><span class="octicon octicon-link"></span></a>Lexer Actions</h1>
+
+<p>In the actions you should specify what the lexer should do after recognizing a token. The simplest action is the empty one;</p>
+
+<p><code>&lt;&gt;\s* { }</code></p>
+
+<p>This is useful to ignore a given input. Since the action won't return any token name, the lexer will continue processing the input without outputting any token for the matched content, thus in fact ignoring that input. In the example above the whitespace is ignored.</p>
+
+<p>Another common situation is having to parse the input to have a meaningful token:</p>
+
+<pre lang="[JAvaScript]"><code>&lt;&gt;{digits}+   {
+    this.jjval = parseInt(this.jjtext);
+    return 'integer';
+}
+</code></pre>
+
+<p>Inside actions, this points to the lexer itself. In the lexer <code>jjtext</code> contains the text that the regular expression matched. <code>jjval</code> by default contains the same text as<code>jjtext</code> but you can change it inside an action. In the example above the text is parsed to get an integer value, which is then stored in <code>jjval</code>.
+Note that <code>jjval</code> is the value that is used in the parsing phase by your interpreter/compiler.
+Another powerful thing you could do inside an action is to change the lexer's state. Take this example:</p>
+
+<pre lang="[JavaScript]"><code>&lt;&gt;\/\*    {this.pushState('BLOCKCOMMENT');}
+&lt;BLOCKCOMMENT&gt;\*\/    {this.popState();}
+&lt;BLOCKCOMMENT&gt;(\n|\r|.) {}
+</code></pre>
+
+<p>When the lexer encounters a <code>/*</code> sequence, it will enter a BLOCKCOMMENT state because of the action <code>this.pushState('BLOCKCOMMENT');</code>. In this state, the only active rules art the ones in which the state list (the list inside angular brackets) contains the BLOCKCOMMENT identifier. So while the lexer is in BLOCKCOMMENT state, it whill ignore any character because of the rule <code>(\n|\r|.) {}</code>
+The only way to change the state is to encounter a <code>*/</code> sequence in which the action <code>this.popState();</code> while resume the state that was active before encountering the first <code>/*</code> sequence.</p>
+
+<p>Here is a table of all the members of the generated lexer that are available for you inside the actions:</p>
+
+<table>
+<thead><tr>
+<th>member</th>
+<th>description</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>jjtext</td>
+<td>the text matched by the regex</td>
+</tr>
+<tr>
+<td>jjval</td>
+<td>the value of the current token, by default the same as jjtext</td>
+</tr>
+<tr>
+<td>jjpos</td>
+<td>the position of the current token inside the input string</td>
+</tr>
+<tr>
+<td>less(n)</td>
+<td>this function can be called to push back n character into the input stream</td>
+</tr>
+<tr>
+<td>isEOF()</td>
+<td>returns true if the input is at the end</td>
+</tr>
+</tbody>
+</table>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Jacob maintained by <a href="https://github.com/Canna71">Canna71</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
