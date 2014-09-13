@@ -1,6 +1,6 @@
 {
-  "name": "Jacob",
-  "version": "1.0.0",
+  "name": "jacob",
+  "version": "1.0.1",
   "description": "A lexer and parser generator for wrinting interpreters and compilers",
   "main": "index.js",
   "directories": {
@@ -34,10 +34,13 @@
     "compiler",
     "grammar"
   ],
-  "author": "Gabriele Cannata",
+    "author": {
+        "name": "Gabriele Cannata",
+        "email": "gcannata@gmail.com"
+    },
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/Canna71/Jacob/issues"
   },
-  "homepage": "https://github.com/Canna71/Jacob"
+  "homepage": "http://canna71.github.io/Jacob/"
 }
