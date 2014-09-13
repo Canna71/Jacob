@@ -3,6 +3,7 @@
  * Created by gcannata on 20/08/2014.
  */
 
+
 var argv = require('minimist')(process.argv.slice(2));
 var jacob = require('../index');
 
