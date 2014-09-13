@@ -33,6 +33,7 @@ describe("jacob examples",function() {
         var Lexer = require('../examples/basiclexer');
         var Parser = require('../examples/expression/expast');
         var astclasses = require('../examples/expression/expastclasses');
+        //we augment the ast with custom behaviour (who needs visitor pattern in javascript?)
         astclasses = require('../examples/expression/expeval');
         var l = new Lexer().setInput('a = 2+3*4\r\na = a / 2\r\nprint a');
         var p = new Parser(astclasses);

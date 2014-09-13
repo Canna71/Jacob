@@ -12,6 +12,25 @@ Also, you will define an actual behaviour which is the semantic of the language,
  
 Given appropiate instructions, Jacob will generate both the lexer and the parser. We'll see how to specify the actual behaviour of your parser.
 
+Usage
+=====
+From a command line to generate the lexer use the following command line:
+
+`jacob -t tokens.jacoblex [-l lexer.js]`
+
+The `-t` argument specify the token specifications file, the optional `-l` parameter specify the name of the generated file. For the token specification file extension you can use whatever extension you want (here I used .jacoblex) except .js since .js file will be interpreted as javascript modules containing the internal representation of the tokens. You could also use this instead of the lexer language descripted later, this will be documented in the future.
+
+Analogously to generate the parser you would use:
+
+`jacob -g grammar.jacobgram [-p parser.js]`
+
+Usually you'll generate both modules with just one invocation:
+
+`jacob -t tokens.jacoblex [-l lexer.js] -g grammar.jacobgram [-p parser.js]`
+
+
+
+
 Lexer
 =====
 
@@ -20,8 +39,11 @@ In order for Jacob to create a lexer you have to provide it with a .jacoblex fil
 ```[JavaSCript]
 
 %moduleName MyLexer
+
 %%
+
 digits = [0-9]
+
 %%
 <>{digits}*\.{digits}+    {
     this.jjval = parseFloat(this.jjtext);
@@ -95,11 +117,7 @@ Here is a summary:
 | ab(cd)* | matches ab, abdc, abcdcd, abcdcdcd ecc. |
 
 
-To generate the lexer use the following command line:
 
-`jacob -t tokens.jacoblex [-l lexer-js]`
-
-The `-t` argument specify the token specifications file, the optional `-l` parameter specify the name of the generated file.
 
 Lexer Actions
 ============
@@ -128,6 +146,7 @@ Another powerful thing you could do inside an action is to change the lexer's st
 
 When the lexer encounters a `/*` sequence, it will enter a BLOCKCOMMENT state because of the action `this.pushState('BLOCKCOMMENT');`. In this state, the only active rules art the ones in which the state list (the list inside angular brackets) contains the BLOCKCOMMENT identifier. So while the lexer is in BLOCKCOMMENT state, it whill ignore any character because of the rule `(\n|\r|.) {}`
 The only way to change the state is to encounter a `*/` sequence in which the action `this.popState();` while resume the state that was active before encountering the first `/*` sequence.
+The previous rules thus can be used to ignore block comments with a C-like syntax.
 
 Here is a table of all the members of the generated lexer that are available for you inside the actions:
 
@@ -138,6 +157,85 @@ Here is a table of all the members of the generated lexer that are available for
 | jjpos | the position of the current token inside the input string |
 | less(n)| this function can be called to push back n character into the input stream |
 | isEOF()| returns true if the input is at the end |
+
+Of courser the generated Lexer is a JavaScript object, so you can dynamically add any member or method you need in your actions.
+
+
+Parser
+======
+
+In order to generate a parser you need to give Jacob the specification file containing an attributed grammar which describes the language you want to interpret/compile. Simply put, the grammar file will contains the grammar rules and the actions that the parser must execute after recognizing each rule.
+Jacob can generate **SLR**, **LALR** and **LR1** parser type. If not specified, Jacob will choose the most appropiate parser type given the grammar.
+
+Here is an example of a jacob grammar file:
+
+
+```[Javascript]
+%moduleName MyParser
+
+%left 'PLUS' '-'
+%left '*' '/'
+
+Program = { Statement } function(){};
+
+Statement = 'id' '=' Expression function(id,_, exp){this[id] = exp;}
+            | 'print' Expression function(_,exp){ console.log(exp);} ;
+
+Expression = Expression 'PLUS' Expression  function (e1, _, e2) {
+                                                             return e1 + e2;
+                                                         }
+            | Expression '-' Expression function (e1, _, e2) {
+                                                              return e1 - e2;
+                                                          }
+            | Expression '*' Expression function (e1, _, e2) {
+                                                             return e1 * e2;
+                                                         }
+             | Expression '/' Expression function (e1, _, e2) {
+                                                               return e1 / e2;
+                                                           }
+             | 'integer'  function (i) {
+                                             return i;
+                                         }
+             | 'id'  function (id) {
+                                        return this[id];
+                                    }
+             | '(' Expression ')'   function (_, e) {
+                                                         return e;
+                                                     }
+
+;
+
+```
+
+Directives
+----------
+At the top of the file you define directives, those can be:
+
+`%moduleName <name>` sets the name of the generated module
+
+`%mode SLR|LALR|LR1` sets the type of the generated parser. If not provided the simplest type able to parse the grammar is used.
+
+`%left|%right token1 [token2 token3...]` sets the precedence and the associativity of an operator. The operator defined first have lower precedence. The name used for the tokens should be the ones that the lexer is returning in their actions. They could be the actual input character (es: '-', '°') or an actual name (es: 'PLUS') the important thing is that they match what the lexer is returning.
+
+`%nonassoc` tells the parser that that token is not associative, so that it will raise an error whenever it will be used is an expression with other operator of the same precedence.
+
+EBNF
+----
+Tha actual grammar is specified in Extended Backus–Naur Form, with every rule followed by an action consisting in a javascript function.
+
+The EBNF in the example defines rules using Nonterminal symbols (Program, Statement, Expression, ...) and terminal symbols ('(', ')', 'integer', '*',...). Terminal symbols are contained in single quotes and should match the name of the tokens as yielded by the lexer.
+
+Each production can have several alternatives (separated by the pipe symbol) and each alternative can have its own action function. The action function will receive a parameter for each element of the corresponding right-hand-side part of the production.
+
+Each rule is then terminated with a semicolon (;).
+
+EBNF is more handier than BNF because it also adds shortcuts to define repetitions, optionals and grouping:
+
+`{ ... }` means 0 or more (...)
+`[ ... ]` means 0 or one (...)
+`( ... )` will group the content into one group. This is useful to inline some rules that don't need a special action for themselves, for example:
+
+`Assignment = Identifier  ':='  ( 'integer' | Identifier | 'string' )  function(id,_,rhsvalue) { ... };`
 
 
 
