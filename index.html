@@ -49,14 +49,34 @@
 <p>Given appropiate instructions, Jacob will generate both the lexer and the parser. We'll see how to specify the actual behaviour of your parser.</p>
 
 <h1>
+<a name="usage" class="anchor" href="#usage"><span class="octicon octicon-link"></span></a>Usage</h1>
+
+<p>From a command line to generate the lexer use the following command line:</p>
+
+<p><code>jacob -t tokens.jacoblex [-l lexer.js]</code></p>
+
+<p>The <code>-t</code> argument specify the token specifications file, the optional <code>-l</code> parameter specify the name of the generated file. For the token specification file extension you can use whatever extension you want (here I used .jacoblex) except .js since .js file will be interpreted as javascript modules containing the internal representation of the tokens. You could also use this instead of the lexer language descripted later, this will be documented in the future.</p>
+
+<p>Analogously to generate the parser you would use:</p>
+
+<p><code>jacob -g grammar.jacobgram [-p parser.js]</code></p>
+
+<p>Usually you'll generate both modules with just one invocation:</p>
+
+<p><code>jacob -t tokens.jacoblex [-l lexer.js] -g grammar.jacobgram [-p parser.js]</code></p>
+
+<h1>
 <a name="lexer" class="anchor" href="#lexer"><span class="octicon octicon-link"></span></a>Lexer</h1>
 
 <p>In order for Jacob to create a lexer you have to provide it with a .jacoblex file which looks something like the following:</p>
 
 <pre lang="[JavaSCript]"><code>
 %moduleName MyLexer
+
 %%
+
 digits = [0-9]
+
 %%
 &lt;&gt;{digits}*\.{digits}+    {
     this.jjval = parseFloat(this.jjtext);
@@ -199,13 +219,7 @@ Here is a summary:</p>
 <td>matches ab, abdc, abcdcd, abcdcdcd ecc.</td>
 </tr>
 </tbody>
-</table><p>To generate the lexer use the following command line:</p>
-
-<p><code>jacob -t tokens.jacoblex [-l lexer-js]</code></p>
-
-<p>The <code>-t</code> argument specify the token specifications file, the optional <code>-l</code> parameter specify the name of the generated file.</p>
-
-<h1>
+</table><h1>
 <a name="lexer-actions" class="anchor" href="#lexer-actions"><span class="octicon octicon-link"></span></a>Lexer Actions</h1>
 
 <p>In the actions you should specify what the lexer should do after recognizing a token. The simplest action is the empty one;</p>
@@ -232,7 +246,8 @@ Another powerful thing you could do inside an action is to change the lexer's st
 </code></pre>
 
 <p>When the lexer encounters a <code>/*</code> sequence, it will enter a BLOCKCOMMENT state because of the action <code>this.pushState('BLOCKCOMMENT');</code>. In this state, the only active rules art the ones in which the state list (the list inside angular brackets) contains the BLOCKCOMMENT identifier. So while the lexer is in BLOCKCOMMENT state, it whill ignore any character because of the rule <code>(\n|\r|.) {}</code>
-The only way to change the state is to encounter a <code>*/</code> sequence in which the action <code>this.popState();</code> while resume the state that was active before encountering the first <code>/*</code> sequence.</p>
+The only way to change the state is to encounter a <code>*/</code> sequence in which the action <code>this.popState();</code> while resume the state that was active before encountering the first <code>/*</code> sequence.
+The previous rules thus can be used to ignore block comments with a C-like syntax.</p>
 
 <p>Here is a table of all the members of the generated lexer that are available for you inside the actions:</p>
 
@@ -263,7 +278,83 @@ The only way to change the state is to encounter a <code>*/</code> sequence in w
 <td>returns true if the input is at the end</td>
 </tr>
 </tbody>
-</table>
+</table><p>Of courser the generated Lexer is a JavaScript object, so you can dynamically add any member or method you need in your actions.</p>
+
+<h1>
+<a name="parser" class="anchor" href="#parser"><span class="octicon octicon-link"></span></a>Parser</h1>
+
+<p>In order to generate a parser you need to give Jacob the specification file containing an attributed grammar which describes the language you want to interpret/compile. Simply put, the grammar file will contains the grammar rules and the actions that the parser must execute after recognizing each rule.
+Jacob can generate <strong>SLR</strong>, <strong>LALR</strong> and <strong>LR1</strong> parser type. If not specified, Jacob will choose the most appropiate parser type given the grammar.</p>
+
+<p>Here is an example of a jacob grammar file:</p>
+
+<pre lang="[Javascript]"><code>%moduleName MyParser
+
+%left 'PLUS' '-'
+%left '*' '/'
+
+Program = { Statement } function(){};
+
+Statement = 'id' '=' Expression function(id,_, exp){this[id] = exp;}
+            | 'print' Expression function(_,exp){ console.log(exp);} ;
+
+Expression = Expression 'PLUS' Expression  function (e1, _, e2) {
+                                                             return e1 + e2;
+                                                         }
+            | Expression '-' Expression function (e1, _, e2) {
+                                                              return e1 - e2;
+                                                          }
+            | Expression '*' Expression function (e1, _, e2) {
+                                                             return e1 * e2;
+                                                         }
+             | Expression '/' Expression function (e1, _, e2) {
+                                                               return e1 / e2;
+                                                           }
+             | 'integer'  function (i) {
+                                             return i;
+                                         }
+             | 'id'  function (id) {
+                                        return this[id];
+                                    }
+             | '(' Expression ')'   function (_, e) {
+                                                         return e;
+                                                     }
+
+;
+
+</code></pre>
+
+<h2>
+<a name="directives" class="anchor" href="#directives"><span class="octicon octicon-link"></span></a>Directives</h2>
+
+<p>At the top of the file you define directives, those can be:</p>
+
+<p><code>%moduleName &lt;name&gt;</code> sets the name of the generated module</p>
+
+<p><code>%mode SLR|LALR|LR1</code> sets the type of the generated parser. If not provided the simplest type able to parse the grammar is used.</p>
+
+<p><code>%left|%right token1 [token2 token3...]</code> sets the precedence and the associativity of an operator. The operator defined first have lower precedence. The name used for the tokens should be the ones that the lexer is returning in their actions. They could be the actual input character (es: '-', '°') or an actual name (es: 'PLUS') the important thing is that they match what the lexer is returning.</p>
+
+<p><code>%nonassoc</code> tells the parser that that token is not associative, so that it will raise an error whenever it will be used is an expression with other operator of the same precedence.</p>
+
+<h2>
+<a name="ebnf" class="anchor" href="#ebnf"><span class="octicon octicon-link"></span></a>EBNF</h2>
+
+<p>Tha actual grammar is specified in Extended Backus–Naur Form, with every rule followed by an action consisting in a javascript function.</p>
+
+<p>The EBNF in the example defines rules using Nonterminal symbols (Program, Statement, Expression, ...) and terminal symbols ('(', ')', 'integer', '*',...). Terminal symbols are contained in single quotes and should match the name of the tokens as yielded by the lexer.</p>
+
+<p>Each production can have several alternatives (separated by the pipe symbol) and each alternative can have its own action function. The action function will receive a parameter for each element of the corresponding right-hand-side part of the production.</p>
+
+<p>Each rule is then terminated with a semicolon (;).</p>
+
+<p>EBNF is more handier than BNF because it also adds shortcuts to define repetitions, optionals and grouping:</p>
+
+<p><code>{ ... }</code> means 0 or more (...)
+<code>[ ... ]</code> means 0 or one (...)
+<code>( ... )</code> will group the content into one group. This is useful to inline some rules that don't need a special action for themselves, for example:</p>
+
+<p><code>Assignment = Identifier  ':='  ( 'integer' | Identifier | 'string' )  function(id,_,rhsvalue) { ... };</code></p>
       </section>
     </div>
 
