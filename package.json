@@ -1,7 +1,7 @@
 {
   "name": "jacob",
-  "version": "1.0.2",
-  "description": "A lexer and parser generator for wrinting interpreters and compilers",
+  "version": "1.0.3",
+  "description": "A lexer and parser generator for writing interpreters and compilers",
   "main": "index.js",
   "directories": {
     "example": "examples",
