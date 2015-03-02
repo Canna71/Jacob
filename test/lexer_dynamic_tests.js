@@ -42,10 +42,10 @@ describe("lex.Lexer",function() {
             token = lexer1.nextToken();
             expect(token.name).to.equal('notword_or_space');
             token = lexer1.nextToken();
-            expect(token.name).to.equal('4');
+            expect(token.name).to.equal('integer');
             expect(token.value).to.equal(4);
             token = lexer1.nextToken();
-            expect(token.name).to.equal('fullstop');
+            expect(token.name).to.equal('notword_or_space');
         });
 
         it('should resolve definitions', function(){
