@@ -22,8 +22,9 @@ var basicTokens = {
         { "regexp": '\\(', action: function(){return 'LPAR';}},//12
         { "regexp": '\\(\\d+\\)', action: function(){return 'EXPR';}},//13
         { 'regexp': '\\w+', action: function(){return 'ident';}},//14
-        { 'regexp': '\\s*', action: function(){}},//15        
+        { 'regexp': '\\s*', action: function(){}},//15
         { 'regexp': '[^\\w\\s/]+', action: function(){return 'notword_or_space';}},//16
+
         { 'regexp': '.', action: function(){return this.jjtext;}},//17
         {'regexp': '(\\n|\\r|.)', action: function(){}, state:'COMMENT'},//18
         { 'regexp': '$', action: function(){console.log('end of file');}}//19
@@ -32,6 +33,21 @@ var basicTokens = {
 
 describe("lex.Lexer",function() {
     describe('nextToken', function(){
+
+        it('should parse digits correctly', function(){
+            var lexer1 = new lexer.Lexer(basicTokens).setInput(new StringReader('3 + 4. '));
+            var token = lexer1.nextToken();
+            expect(token.name).to.equal('integer');
+            expect(token.value).to.equal(3);
+            token = lexer1.nextToken();
+            expect(token.name).to.equal('notword_or_space');
+            token = lexer1.nextToken();
+            expect(token.name).to.equal('4');
+            expect(token.value).to.equal(4);
+            token = lexer1.nextToken();
+            expect(token.name).to.equal('fullstop');
+        });
+
         it('should resolve definitions', function(){
             var lexer1 = new lexer.Lexer(basicTokens).setInput(new StringReader('321.02'));
             var token = lexer1.nextToken();
