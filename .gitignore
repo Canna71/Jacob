@@ -11,3 +11,6 @@ my-reporter.js
 lib/browser/diff.js
 .idea
 *.iml
+examples/Expression/expeval.js
+examples/Expression/expint.js
+examples/basiclexer.js
