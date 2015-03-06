@@ -11,10 +11,10 @@ describe("jacob examples",function() {
         var jacob = require('../index');
 
         jacob.elaborateLexFile('./examples/basictokens.jacoblex','./examples/basiclexer.js');
-        jacob.elaborateGramFile('./examples/expression/expression.jacobgram','./examples/expression/expint.js');
+        jacob.elaborateGramFile('./examples/Expression/expression.jacobgram','./examples/Expression/expint.js');
 
         var Lexer = require('../examples/basiclexer');
-        var Parser = require('../examples/expression/expint');
+        var Parser = require('../examples/Expression/expint');
         var l = new Lexer().setInput('a = 2+3*4\r\na = a / 2\r\nprint a');
         var p = new Parser();
         var cxt = {};
@@ -28,13 +28,13 @@ describe("jacob examples",function() {
         var jacob = require('../index');
 
         jacob.elaborateLexFile('./examples/basictokens.jacoblex','./examples/basiclexer.js');
-        jacob.elaborateGramFile('./examples/expression/expressionast.jacobgram','./examples/expression/expast.js');
+        jacob.elaborateGramFile('./examples/Expression/expressionast.jacobgram','./examples/Expression/expast.js');
 
         var Lexer = require('../examples/basiclexer');
-        var Parser = require('../examples/expression/expast');
-        var astclasses = require('../examples/expression/expastclasses');
+        var Parser = require('../examples/Expression/expast');
+        var astclasses = require('../examples/Expression/ExpAstClasses');
         //we augment the ast with custom behaviour (who needs visitor pattern in javascript?)
-        astclasses = require('../examples/expression/expeval');
+        astclasses = require('../examples/Expression/expeval');
         var l = new Lexer().setInput('a = 2+3*4\r\na = a / 2\r\nprint a');
         var p = new Parser(astclasses);
 
