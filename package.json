@@ -1,6 +1,6 @@
 {
   "name": "jacob",
-  "version": "1.0.4",
+  "version":  "1.0.4",
   "description": "A lexer and parser generator for writing interpreters and compilers",
   "main": "index.js",
   "directories": {
