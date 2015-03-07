@@ -28,7 +28,7 @@ module.exports = function(grunt) {
     grunt.registerTask('jacobgram', 'Build JacobLex.js', function() {
         var jacob = require('./index');
         jacob.elaborateLexFile('./lib/parser/gramlex.jacoblex','./lib/parser/jacobgramlexer.js');
-        jacob.elaborateGramFile('./lib/parser/gramgram.js','./lib/parser/jacobgraminterpreter.js');
+        jacob.elaborateGramFile('./lib/parser/gramgram.js','./lib/parser/JacobGramInterpreter.js');
     });
 
 
@@ -36,7 +36,7 @@ module.exports = function(grunt) {
     grunt.registerTask('test', 'Run tests', function() {
         var jacob = require('./index');
         jacob.elaborateLexFile('./lib/parser/gramlex.jacoblex','./lib/parser/jacobgramlexer.js');
-        jacob.elaborateGramFile('./lib/parser/gramgram.js','./lib/parser/jacobgraminterpreter.js');
+        jacob.elaborateGramFile('./lib/parser/gramgram.js','./lib/parser/JacobGramInterpreter.js');
     });
 
     grunt.registerTask('test', 'mochaTest');
