@@ -7,6 +7,8 @@
 var argv = require('minimist')(process.argv.slice(2));
 var jacob = require('../index');
 
+console.log('JACOB 1.0.5');
+
 if(!argv.t && !argv.g){
     printUsage();
 }
