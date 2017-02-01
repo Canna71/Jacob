@@ -34,6 +34,29 @@ var basicTokens = {
 describe("lex.Lexer",function() {
     describe('nextToken', function(){
 
+        it('should parse abcab correctly', function(){
+
+            var tokens = {
+              tokens: [
+                  {regexp: 'abc', action: function(){console.log('abc=',this.jjtext);return this.jjtext;}},
+                  {regexp: 'a', action: function(){console.log('a=',this.jjtext);return this.jjtext;}},
+                  {regexp: 'b', action: function(){console.log('b=',this.jjtext);return this.jjtext;}}
+              ]
+            };
+
+            var lexer1 = new lexer.Lexer(tokens).setInput(new StringReader('abcab'));
+            var token = lexer1.nextToken();
+
+            expect(token.value).to.equal('abc');
+            token = lexer1.nextToken();
+            expect(token.name).to.equal('a');
+            token = lexer1.nextToken();
+            expect(token.value).to.equal('b');
+            token = lexer1.nextToken();
+            expect(token.name).to.equal(undefined);
+        });
+
+
         it('should parse digits correctly', function(){
             var lexer1 = new lexer.Lexer(basicTokens).setInput(new StringReader('3 + 4. '));
             var token = lexer1.nextToken();
