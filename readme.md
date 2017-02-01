@@ -114,7 +114,7 @@ Here is a summary:
 | r/s | lookahead: matches r only if it is followed by s |
 | ^r | matches r only at the beginning of a line |
 | r$ | matches r only at the end of a line |
-| ab(cd)* | matches ab, abdc, abcdcd, abcdcdcd ecc. |
+| ab(cd)* | matches ab, abcd, abcdcd, abcdcdcd etc. |
 
 
 
